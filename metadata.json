@@ -1,0 +1,8 @@
+{
+  "name": "ParkMaster - Sistema de Gestión",
+  "description": "Sistema de gestión de estacionamiento con soporte para base de datos en Google Sheets y conexión directa a impresoras de hardware.",
+  "requestFramePermissions": [
+    "bluetooth",
+    "serial"
+  ]
+}
