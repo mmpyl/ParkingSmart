@@ -1,0 +1,5 @@
+/*
+ * Archivo base de estilos globales.
+ * Se mantiene intencionalmente liviano para evitar warnings de build
+ * y centralizar overrides globales futuros fuera de index.html.
+ */
