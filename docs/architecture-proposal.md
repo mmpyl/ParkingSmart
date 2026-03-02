@@ -71,3 +71,9 @@ src/
 - `App.tsx` por debajo de 200 líneas.
 - Sin warnings de build por archivos faltantes.
 - Scripts de validación ejecutables en local y CI.
+
+## Avance implementado (actualización)
+
+- ✅ Fase 2: extracción de `useCloudSync` y acciones de parking aplicada.
+- ✅ Fase 3 (parcial): impresión extraída en `usePrintManager` y persistencia centralizada en `localStorageService`.
+- ⚠️ Pendiente: mover carpetas a estructura `features/*` y bajar `App.tsx` por debajo de 200 líneas.

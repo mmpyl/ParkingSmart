@@ -6,31 +6,25 @@ import {
   DEFAULT_TARIFA,
   DEFAULT_PRINT_SETTINGS
 } from '../types';
+import { getStorageItem, getStorageJson, storageKeys } from '../services/localStorageService';
 
 const getInitialAppState = (): AppState => {
   try {
-    const savedData = localStorage.getItem('parkAi_data');
-    const savedColumns = localStorage.getItem('parkAi_columns');
-    const savedTariffs = localStorage.getItem('parkAi_tariffs');
-    const savedPrint = localStorage.getItem('parkAi_printSettings');
-    const savedHistory = localStorage.getItem('parkAi_printHistory');
-    const savedCurrency = localStorage.getItem('parkAi_currency');
-    const lastSynced = localStorage.getItem('parkAi_lastSynced');
+    const parsedPrintSettings = getStorageJson(storageKeys.printSettings, DEFAULT_PRINT_SETTINGS);
 
-    const parsedPrintSettings = savedPrint ? JSON.parse(savedPrint) : DEFAULT_PRINT_SETTINGS;
     if (parsedPrintSettings.hardware) {
       parsedPrintSettings.hardware.connected = false;
       parsedPrintSettings.hardware.device = undefined;
     }
 
     return {
-      columns: savedColumns ? JSON.parse(savedColumns) : PARKING_COLUMNS,
-      data: savedData ? JSON.parse(savedData) : DEMO_DATA,
-      tariffs: savedTariffs ? JSON.parse(savedTariffs) : DEFAULT_TARIFA,
+      columns: getStorageJson(storageKeys.columns, PARKING_COLUMNS),
+      data: getStorageJson(storageKeys.data, DEMO_DATA),
+      tariffs: getStorageJson(storageKeys.tariffs, DEFAULT_TARIFA),
       printSettings: parsedPrintSettings,
-      printHistory: savedHistory ? JSON.parse(savedHistory) : [],
-      currency: savedCurrency || 'COP',
-      lastSynced: lastSynced || undefined
+      printHistory: getStorageJson(storageKeys.printHistory, []),
+      currency: getStorageItem(storageKeys.currency) || 'COP',
+      lastSynced: getStorageItem(storageKeys.lastSynced) || undefined
     };
   } catch {
     return {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import DataGrid from './components/DataGrid';
 import SheetConnectionModal from './components/SheetConnectionModal';
@@ -7,57 +7,26 @@ import ActiveVehiclesGrid from './components/ActiveVehiclesGrid';
 import TicketTemplate from './components/TicketTemplate';
 import PrintPreviewModal from './components/PrintPreviewModal';
 import EditRowModal from './components/EditRowModal';
-import {
-  SheetRow,
-  formatCurrency,
-  PrintHistoryItem
-} from './types';
-import { printToHardware } from './utils/printer';
-import {
-  Car,
-  Settings,
-  RefreshCw,
-  Cloud,
-  PlusCircle,
-  AlertTriangle,
-  CheckCircle,
-  WifiOff
-} from 'lucide-react';
+import { SheetRow, formatCurrency } from './types';
+import { Car, Settings, RefreshCw, Cloud, PlusCircle, AlertTriangle, CheckCircle, WifiOff } from 'lucide-react';
 import { useCloudSync } from './hooks/useCloudSync';
 import { useParkingActions } from './hooks/useParkingActions';
 import { useAppState } from './hooks/useAppState';
+import { usePrintManager } from './hooks/usePrintManager';
+import { getStorageItem, removeStorageItem, setStorageItem, setStorageJson, storageKeys } from './services/localStorageService';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useAppState();
-
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<'cloud' | 'tariffs' | 'printer' | 'history'>('cloud');
-  const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [rowToEdit, setRowToEdit] = useState<SheetRow | undefined>(undefined);
-  const [sheetUrl, setSheetUrl] = useState<string | null>(() => localStorage.getItem('parkAi_url'));
-  const [rowToPrint, setRowToPrint] = useState<SheetRow | null>(null);
+  const [sheetUrl, setSheetUrl] = useState<string | null>(() => getStorageItem(storageKeys.sheetUrl));
 
-  const {
-    isSyncing,
-    syncStatus,
-    lastError,
-    syncWithCloud,
-    handleSyncSheet
-  } = useCloudSync({ sheetUrl, setAppState });
+  const { isSyncing, syncStatus, lastError, syncWithCloud, handleSyncSheet } = useCloudSync({ sheetUrl, setAppState });
+  const { rowToPrint, showPrintPreview, setShowPrintPreview, handlePrint, handleConfirmPrint, handleReprint } = usePrintManager({ appState, setAppState });
 
-  const handlePrint = useCallback((row: SheetRow) => {
-    setRowToPrint(row);
-    setShowPrintPreview(true);
-  }, []);
-
-  const {
-    handleUpdateAllSettings,
-    handleQuickRegister,
-    handleRegisterExit,
-    handleDeleteRow,
-    handleSaveRowMutation
-  } = useParkingActions({
+  const { handleUpdateAllSettings, handleQuickRegister, handleRegisterExit, handleDeleteRow, handleSaveRowMutation } = useParkingActions({
     setAppState,
     syncWithCloud,
     onRequestPrint: handlePrint,
@@ -69,59 +38,19 @@ const App: React.FC = () => {
   }, [handleSyncSheet, sheetUrl]);
 
   useEffect(() => {
-    localStorage.setItem('parkAi_data', JSON.stringify(appState.data));
-    localStorage.setItem('parkAi_tariffs', JSON.stringify(appState.tariffs));
-    localStorage.setItem('parkAi_currency', appState.currency);
-    const sToSave = {
+    setStorageJson(storageKeys.data, appState.data);
+    setStorageJson(storageKeys.tariffs, appState.tariffs);
+    setStorageItem(storageKeys.currency, appState.currency);
+    const serializablePrintSettings = {
       ...appState.printSettings,
       hardware: { ...appState.printSettings.hardware, device: undefined, interface: undefined }
     };
-    localStorage.setItem('parkAi_printSettings', JSON.stringify(sToSave));
+    setStorageJson(storageKeys.printSettings, serializablePrintSettings);
   }, [appState]);
 
   const handleEditRow = (row: SheetRow) => {
     setRowToEdit(row);
     setShowEditModal(true);
-  };
-
-  const handleConfirmPrint = async () => {
-    if (!rowToPrint) return;
-    const settings = appState.printSettings;
-    setShowPrintPreview(false);
-
-    if (settings.hardware && settings.hardware.type !== 'system' && settings.hardware.connected) {
-      const result = await printToHardware(rowToPrint, settings, appState.tariffs, appState.currency);
-      if (!result.success) {
-        alert('Error hardware: ' + result.error);
-        window.print();
-      }
-    } else {
-      setTimeout(() => window.print(), 150);
-    }
-
-    const historyItem: PrintHistoryItem = {
-      id: crypto.randomUUID(),
-      rowId: rowToPrint.id,
-      placa: rowToPrint.Placa,
-      tipo: rowToPrint.Tipo,
-      timestamp: new Date().toISOString(),
-      isExit: rowToPrint.Estado === 'Finalizado',
-      total: rowToPrint.Total
-    };
-
-    setAppState(prev => {
-      const newHistory = [historyItem, ...prev.printHistory].slice(0, 50);
-      localStorage.setItem('parkAi_printHistory', JSON.stringify(newHistory));
-      return { ...prev, printHistory: newHistory };
-    });
-  };
-
-  const handleReprint = (historyId: string) => {
-    const item = appState.printHistory.find(h => h.id === historyId);
-    if (item) {
-      const row = appState.data.find(r => r.id === item.rowId);
-      if (row) handlePrint(row);
-    }
   };
 
   const handleOpenSettings = (tab: 'cloud' | 'tariffs' | 'printer' | 'history' = 'cloud') => {
@@ -145,7 +74,7 @@ const App: React.FC = () => {
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase transition-all ${
               syncStatus === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
               syncStatus === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-              'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                'bg-blue-500/10 border-blue-500/20 text-blue-400'
             }`}>
               {syncStatus === 'error' ? <AlertTriangle size={14} /> :
                 syncStatus === 'success' ? <CheckCircle size={14} /> :
@@ -210,13 +139,13 @@ const App: React.FC = () => {
           initialTab={settingsInitialTab}
           onConnect={(url) => {
             setSheetUrl(url);
-            localStorage.setItem('parkAi_url', url);
+            setStorageItem(storageKeys.sheetUrl, url);
             setShowSettingsModal(false);
             handleSyncSheet(url);
           }}
           onDisconnect={() => {
             setSheetUrl(null);
-            localStorage.removeItem('parkAi_url');
+            removeStorageItem(storageKeys.sheetUrl);
             setShowSettingsModal(false);
           }}
           currentUrl={sheetUrl}
@@ -224,7 +153,10 @@ const App: React.FC = () => {
           currency={appState.currency}
           printSettings={appState.printSettings}
           printHistory={appState.printHistory}
-          onUpdatePrintHistory={(h) => setAppState(prev => ({ ...prev, printHistory: h }))}
+          onUpdatePrintHistory={(history) => {
+            setStorageJson(storageKeys.printHistory, history);
+            setAppState(prev => ({ ...prev, printHistory: history }));
+          }}
           onReprint={handleReprint}
           onSaveAllSettings={handleUpdateAllSettings}
         />

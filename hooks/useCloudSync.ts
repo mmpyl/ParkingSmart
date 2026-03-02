@@ -1,16 +1,39 @@
-import { useCallback, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { AppState } from '../types';
 import { fetchSheetData, saveSheetData, SheetPayload } from '../services/sheetService';
+import { setStorageItem, storageKeys } from '../services/localStorageService';
 
 interface UseCloudSyncParams {
   sheetUrl: string | null;
   setAppState: Dispatch<SetStateAction<AppState>>;
 }
 
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  return 'Error desconocido de sincronización.';
+};
+
 export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [lastError, setLastError] = useState<string | null>(null);
+  const idleTimeoutRef = useRef<number | null>(null);
+
+  const setSyncSuccess = useCallback(() => {
+    setSyncStatus('success');
+    if (idleTimeoutRef.current) {
+      window.clearTimeout(idleTimeoutRef.current);
+    }
+    idleTimeoutRef.current = window.setTimeout(() => setSyncStatus('idle'), 3000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (idleTimeoutRef.current) {
+        window.clearTimeout(idleTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const syncWithCloud = useCallback(async (stateToSync: AppState) => {
     if (!sheetUrl || isSyncing) return;
@@ -29,24 +52,23 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
         }
       };
 
-      const success = await saveSheetData(sheetUrl, payload);
-      if (success) {
+      const result = await saveSheetData(sheetUrl, payload);
+      if (result.ok) {
         const now = new Date().toLocaleTimeString();
         setAppState(prev => ({ ...prev, lastSynced: now }));
-        localStorage.setItem('parkAi_lastSynced', now);
-        setSyncStatus('success');
-        setTimeout(() => setSyncStatus('idle'), 3000);
+        setStorageItem(storageKeys.lastSynced, now);
+        setSyncSuccess();
       } else {
         setSyncStatus('error');
-        setLastError('Error al guardar: Verifique el script en Google Sheets.');
+        setLastError(result.error || 'Error al guardar: Verifique el script en Google Sheets.');
       }
-    } catch (e: any) {
+    } catch (error: unknown) {
       setSyncStatus('error');
-      setLastError(e.message);
+      setLastError(getErrorMessage(error));
     } finally {
       setIsSyncing(false);
     }
-  }, [isSyncing, setAppState, sheetUrl]);
+  }, [isSyncing, setAppState, setSyncSuccess, sheetUrl]);
 
   const handleSyncSheet = useCallback(async (url: string) => {
     if (!url || isSyncing) return;
@@ -70,16 +92,15 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
           },
           currency: result.settings?.currency || prev.currency
         }));
-        setSyncStatus('success');
-        setTimeout(() => setSyncStatus('idle'), 3000);
+        setSyncSuccess();
       }
-    } catch (e: any) {
+    } catch (error: unknown) {
       setSyncStatus('error');
-      setLastError(e.message);
+      setLastError(getErrorMessage(error));
     } finally {
       setIsSyncing(false);
     }
-  }, [isSyncing, setAppState]);
+  }, [isSyncing, setAppState, setSyncSuccess]);
 
   return {
     isSyncing,
