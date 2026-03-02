@@ -77,3 +77,35 @@ src/
 - ✅ Fase 2: extracción de `useCloudSync` y acciones de parking aplicada.
 - ✅ Fase 3 (parcial): impresión extraída en `usePrintManager` y persistencia centralizada en `localStorageService`.
 - ⚠️ Pendiente: mover carpetas a estructura `features/*` y bajar `App.tsx` por debajo de 200 líneas.
+
+
+## Estructura aplicada (fase 4)
+
+```text
+features/
+  app/
+    AppShell.tsx
+    components/
+      AppHeader.tsx
+      AppStats.tsx
+  cloud-sync/
+    hooks/
+      useCloudSync.ts
+    services/
+      sheetService.ts
+  parking/
+    hooks/
+      useAppState.ts
+      useParkingActions.ts
+  printing/
+    hooks/
+      usePrintManager.ts
+  shared/
+    services/
+      localStorageService.ts
+```
+
+### Reglas de escalabilidad adoptadas
+- Cada feature expone un `index.ts` como API pública de su dominio.
+- `App.tsx` queda como punto de entrada mínimo; la composición principal vive en `features/app/AppShell.tsx`.
+- Los servicios transversales se consumen desde `features/shared/*` para evitar duplicación.
