@@ -1,5 +1,5 @@
 
-import { SheetRow, Tariffs, PrintSettings } from "../types";
+import { SheetRow, Tariffs, PrintSettings } from "../../../types";
 
 export interface SheetPayload {
   data: SheetRow[];
@@ -82,20 +82,38 @@ export const fetchSheetData = async (scriptUrl: string): Promise<SheetPayload | 
   }
 };
 
-export const saveSheetData = async (scriptUrl: string, payload: SheetPayload): Promise<boolean> => {
-  if (!scriptUrl) return false;
+export interface SaveSheetResult {
+  ok: boolean;
+  error?: string;
+}
+
+export const saveSheetData = async (scriptUrl: string, payload: SheetPayload): Promise<SaveSheetResult> => {
+  if (!scriptUrl) return { ok: false, error: "URL de script no configurada." };
   try {
     const cleanUrl = getCleanUrl(scriptUrl);
-    await fetch(cleanUrl, {
+    const response = await fetch(cleanUrl, {
       method: 'POST',
-      mode: 'no-cors', 
+      mode: 'cors',
       redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      headers: { 'Content-Type': 'text/plain;charset=utf-8', 'Accept': 'application/json' },
       body: JSON.stringify(payload),
     });
-    return true; 
+
+    if (!response.ok) {
+      return { ok: false, error: `Error HTTP ${response.status} al guardar en Google Sheets.` };
+    }
+
+    const result = await response.json().catch(() => null);
+    if (!result || result.status !== 'success') {
+      return { ok: false, error: result?.message || 'Respuesta inválida del script de Google Sheets.' };
+    }
+
+    return { ok: true };
   } catch (error) {
     console.error("Error guardando en la nube:", error);
-    return false;
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Error desconocido"
+    };
   }
 };
