@@ -7,13 +7,15 @@ import ActiveVehiclesGrid from './components/ActiveVehiclesGrid';
 import TicketTemplate from './components/TicketTemplate';
 import PrintPreviewModal from './components/PrintPreviewModal';
 import EditRowModal from './components/EditRowModal';
-import { SheetRow, formatCurrency } from './types';
-import { Car, Settings, RefreshCw, Cloud, PlusCircle, AlertTriangle, CheckCircle, WifiOff } from 'lucide-react';
-import { useCloudSync } from './hooks/useCloudSync';
-import { useParkingActions } from './hooks/useParkingActions';
-import { useAppState } from './hooks/useAppState';
-import { usePrintManager } from './hooks/usePrintManager';
-import { getStorageItem, removeStorageItem, setStorageItem, setStorageJson, storageKeys } from './services/localStorageService';
+import { SheetRow } from './types';
+import { PlusCircle, WifiOff } from 'lucide-react';
+import { useCloudSync } from './features/cloud-sync/hooks/useCloudSync';
+import { useParkingActions } from './features/parking/hooks/useParkingActions';
+import { useAppState } from './features/parking/hooks/useAppState';
+import { usePrintManager } from './features/printing/hooks/usePrintManager';
+import { getStorageItem, removeStorageItem, setStorageItem, setStorageJson, storageKeys } from './features/shared/services/localStorageService';
+import AppHeader from './features/app/components/AppHeader';
+import AppStats from './features/app/components/AppStats';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useAppState();
@@ -58,36 +60,15 @@ const App: React.FC = () => {
     setShowSettingsModal(true);
   };
 
-  const totalCajaEfectiva = appState.data
-    .filter(r => r.Estado === 'Finalizado')
-    .reduce((acc, r) => acc + (Number(r.Total) || 0), 0);
-
   return (
     <div className="flex flex-col h-screen bg-slate-50 overflow-hidden font-sans text-slate-900">
-      <header className="bg-slate-900 border-b border-slate-800 h-16 flex items-center justify-between px-6 shadow-xl z-20 text-white no-print">
-        <div className="flex items-center gap-4">
-          <div className="p-2 bg-blue-600 rounded-lg shadow-lg shadow-blue-500/20"><Car size={24} /></div>
-          <h1 className="text-xl font-black tracking-tight uppercase">ParkMaster</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          {sheetUrl && (
-            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase transition-all ${
-              syncStatus === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
-              syncStatus === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-                'bg-blue-500/10 border-blue-500/20 text-blue-400'
-            }`}>
-              {syncStatus === 'error' ? <AlertTriangle size={14} /> :
-                syncStatus === 'success' ? <CheckCircle size={14} /> :
-                  <Cloud size={14} className={isSyncing ? 'animate-pulse' : ''} />}
-              {isSyncing ? 'Sincronizando' : syncStatus === 'error' ? 'Error Nube' : syncStatus === 'success' ? 'Sincronizado' : 'Conectado'}
-            </div>
-          )}
-          <button onClick={() => handleSyncSheet(sheetUrl || '')} disabled={isSyncing || !sheetUrl} className="p-2 text-slate-400 hover:text-white rounded-lg transition-all disabled:opacity-30">
-            <RefreshCw size={20} className={isSyncing ? 'animate-spin' : ''} />
-          </button>
-          <button onClick={() => handleOpenSettings('cloud')} className="p-2 text-slate-400 hover:text-white rounded-lg transition-all"><Settings size={20} /></button>
-        </div>
-      </header>
+      <AppHeader
+        sheetUrl={sheetUrl}
+        syncStatus={syncStatus}
+        isSyncing={isSyncing}
+        onSync={() => handleSyncSheet(sheetUrl || '')}
+        onOpenSettings={() => handleOpenSettings('cloud')}
+      />
 
       <div className="flex flex-1 overflow-hidden no-print">
         <main className="flex-1 overflow-auto p-8 custom-scrollbar">
@@ -105,20 +86,7 @@ const App: React.FC = () => {
               </div>
             )}
 
-            <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Vehículos Activos</div>
-                <div className="text-3xl font-black text-slate-800">{appState.data.filter(r => r.Estado === 'Activo').length}</div>
-              </div>
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Caja del Día</div>
-                <div className="text-3xl font-black text-green-600">{formatCurrency(totalCajaEfectiva, appState.currency)}</div>
-              </div>
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">Última Sincronización</div>
-                <div className="text-sm font-bold text-slate-600 mt-2">{appState.lastSynced || 'Pendiente de conexión'}</div>
-              </div>
-            </div>
+            <AppStats appState={appState} />
 
             <QuickEntryActions onRegister={handleQuickRegister} history={appState.data} tariffs={appState.tariffs} onOpenSettings={() => handleOpenSettings('tariffs')} />
             <ActiveVehiclesGrid data={appState.data} onRegisterExit={handleRegisterExit} onPrintTicket={handlePrint} tariffs={appState.tariffs} currency={appState.currency} />
