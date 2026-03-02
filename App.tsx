@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import DataGrid from './components/DataGrid';
 import SheetConnectionModal from './components/SheetConnectionModal';
@@ -8,264 +7,50 @@ import ActiveVehiclesGrid from './components/ActiveVehiclesGrid';
 import TicketTemplate from './components/TicketTemplate';
 import PrintPreviewModal from './components/PrintPreviewModal';
 import EditRowModal from './components/EditRowModal';
-import { 
-  SheetRow, 
-  AppState, 
-  DEMO_DATA, 
-  PARKING_COLUMNS, 
-  calculateParkingStats,
-  formatCurrency,
-  Tariffs,
-  DEFAULT_TARIFA,
-  PrintSettings,
-  DEFAULT_PRINT_SETTINGS,
-  PrintHistoryItem
-} from './types';
-import { fetchSheetData, saveSheetData, SheetPayload } from './services/sheetService';
-import { printToHardware } from './utils/printer';
-import { 
-  Car, 
-  Settings,
-  RefreshCw,
-  Cloud,
-  PlusCircle,
-  AlertTriangle,
-  CheckCircle,
-  WifiOff
-} from 'lucide-react';
+import { SheetRow, formatCurrency } from './types';
+import { Car, Settings, RefreshCw, Cloud, PlusCircle, AlertTriangle, CheckCircle, WifiOff } from 'lucide-react';
+import { useCloudSync } from './hooks/useCloudSync';
+import { useParkingActions } from './hooks/useParkingActions';
+import { useAppState } from './hooks/useAppState';
+import { usePrintManager } from './hooks/usePrintManager';
+import { getStorageItem, removeStorageItem, setStorageItem, setStorageJson, storageKeys } from './services/localStorageService';
 
 const App: React.FC = () => {
-  const [appState, setAppState] = useState<AppState>(() => {
-    try {
-      const savedData = localStorage.getItem('parkAi_data');
-      const savedColumns = localStorage.getItem('parkAi_columns');
-      const savedTariffs = localStorage.getItem('parkAi_tariffs');
-      const savedPrint = localStorage.getItem('parkAi_printSettings');
-      const savedHistory = localStorage.getItem('parkAi_printHistory');
-      const savedCurrency = localStorage.getItem('parkAi_currency');
-      const lastSynced = localStorage.getItem('parkAi_lastSynced');
-      
-      const parsedPrintSettings = savedPrint ? JSON.parse(savedPrint) : DEFAULT_PRINT_SETTINGS;
-      if (parsedPrintSettings.hardware) {
-        parsedPrintSettings.hardware.connected = false;
-        parsedPrintSettings.hardware.device = undefined;
-      }
-
-      return {
-        columns: savedColumns ? JSON.parse(savedColumns) : PARKING_COLUMNS,
-        data: savedData ? JSON.parse(savedData) : DEMO_DATA,
-        tariffs: savedTariffs ? JSON.parse(savedTariffs) : DEFAULT_TARIFA,
-        printSettings: parsedPrintSettings,
-        printHistory: savedHistory ? JSON.parse(savedHistory) : [],
-        currency: savedCurrency || 'COP',
-        lastSynced: lastSynced || undefined
-      };
-    } catch (e) {
-      return {
-        columns: PARKING_COLUMNS,
-        data: DEMO_DATA,
-        tariffs: DEFAULT_TARIFA,
-        printSettings: DEFAULT_PRINT_SETTINGS,
-        printHistory: [],
-        currency: 'COP'
-      };
-    }
-  });
-  
+  const [appState, setAppState] = useAppState();
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<'cloud' | 'tariffs' | 'printer' | 'history'>('cloud');
-  const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [rowToEdit, setRowToEdit] = useState<SheetRow | undefined>(undefined);
-  const [sheetUrl, setSheetUrl] = useState<string | null>(() => localStorage.getItem('parkAi_url'));
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
-  const [lastError, setLastError] = useState<string | null>(null);
-  const [rowToPrint, setRowToPrint] = useState<SheetRow | null>(null);
+  const [sheetUrl, setSheetUrl] = useState<string | null>(() => getStorageItem(storageKeys.sheetUrl));
 
-  // Sincronización robusta con la nube
-  const syncWithCloud = async (stateToSync: AppState) => {
-    if (!sheetUrl || isSyncing) return;
+  const { isSyncing, syncStatus, lastError, syncWithCloud, handleSyncSheet } = useCloudSync({ sheetUrl, setAppState });
+  const { rowToPrint, showPrintPreview, setShowPrintPreview, handlePrint, handleConfirmPrint, handleReprint } = usePrintManager({ appState, setAppState });
 
-    setIsSyncing(true);
-    setSyncStatus('syncing');
-    setLastError(null);
-    
-    try {
-      const payload: SheetPayload = {
-        data: stateToSync.data,
-        settings: {
-          tariffs: stateToSync.tariffs,
-          printSettings: stateToSync.printSettings,
-          currency: stateToSync.currency
-        }
-      };
-      
-      const success = await saveSheetData(sheetUrl, payload);
-      if (success) {
-        const now = new Date().toLocaleTimeString();
-        setAppState(prev => ({ ...prev, lastSynced: now }));
-        localStorage.setItem('parkAi_lastSynced', now);
-        setSyncStatus('success');
-        setTimeout(() => setSyncStatus('idle'), 3000);
-      } else {
-        setSyncStatus('error');
-        setLastError("Error al guardar: Verifique el script en Google Sheets.");
-      }
-    } catch (e: any) {
-      setSyncStatus('error');
-      setLastError(e.message);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  // Función unificada para guardar configuraciones y evitar múltiples peticiones
-  const handleUpdateAllSettings = (tariffs: Tariffs, printSettings: PrintSettings, currency: string) => {
-    setAppState(prev => {
-      const next = { ...prev, tariffs, printSettings, currency };
-      syncWithCloud(next);
-      return next;
-    });
-  };
-
-  const handleSyncSheet = useCallback(async (url: string) => {
-    if (!url || isSyncing) return;
-    setIsSyncing(true);
-    setSyncStatus('syncing');
-    setLastError(null);
-    try {
-      const result = await fetchSheetData(url);
-      if (result) {
-        const now = new Date().toLocaleTimeString();
-        setAppState(prev => ({
-          ...prev,
-          data: result.data.length > 0 ? result.data : prev.data,
-          lastSynced: now,
-          tariffs: result.settings?.tariffs || prev.tariffs,
-          printSettings: {
-            ...(result.settings?.printSettings || prev.printSettings),
-            hardware: prev.printSettings.hardware
-          },
-          currency: result.settings?.currency || prev.currency
-        }));
-        setSyncStatus('success');
-        setTimeout(() => setSyncStatus('idle'), 3000);
-      }
-    } catch (e: any) {
-      setSyncStatus('error');
-      setLastError(e.message);
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [isSyncing]);
+  const { handleUpdateAllSettings, handleQuickRegister, handleRegisterExit, handleDeleteRow, handleSaveRowMutation } = useParkingActions({
+    setAppState,
+    syncWithCloud,
+    onRequestPrint: handlePrint,
+    onCloseEditModal: () => setShowEditModal(false)
+  });
 
   useEffect(() => {
     if (sheetUrl) handleSyncSheet(sheetUrl);
-  }, [sheetUrl]);
+  }, [handleSyncSheet, sheetUrl]);
 
-  // Persistencia local automática
   useEffect(() => {
-    localStorage.setItem('parkAi_data', JSON.stringify(appState.data));
-    localStorage.setItem('parkAi_tariffs', JSON.stringify(appState.tariffs));
-    localStorage.setItem('parkAi_currency', appState.currency);
-    const sToSave = { ...appState.printSettings, hardware: { ...appState.printSettings.hardware, device: undefined, interface: undefined } };
-    localStorage.setItem('parkAi_printSettings', JSON.stringify(sToSave));
+    setStorageJson(storageKeys.data, appState.data);
+    setStorageJson(storageKeys.tariffs, appState.tariffs);
+    setStorageItem(storageKeys.currency, appState.currency);
+    const serializablePrintSettings = {
+      ...appState.printSettings,
+      hardware: { ...appState.printSettings.hardware, device: undefined, interface: undefined }
+    };
+    setStorageJson(storageKeys.printSettings, serializablePrintSettings);
   }, [appState]);
 
-  const handleQuickRegister = (tipo: string, placa: string, vehiculo: string) => {
-    setAppState(prev => {
-      if (prev.data.some(r => r.Placa.toUpperCase() === placa.toUpperCase() && r.Estado === 'Activo')) return prev;
-      const newEntry: SheetRow = {
-        id: crypto.randomUUID(),
-        Placa: placa.toUpperCase(),
-        Vehiculo: vehiculo,
-        Tipo: tipo,
-        Entrada: new Date().toISOString(),
-        Salida: '-',
-        Estado: 'Activo',
-        Total: 0
-      };
-      const next = { ...prev, data: [...prev.data, newEntry] };
-      syncWithCloud(next);
-      if (prev.printSettings.autoPrintEntry) handlePrint(newEntry);
-      return next;
-    });
-  };
-
-  const handleRegisterExit = (id: string) => {
-    setAppState(prev => {
-      const row = prev.data.find(r => r.id === id);
-      if (!row) return prev;
-      const exitTimestamp = new Date();
-      const stats = calculateParkingStats(row.Entrada, row.Tipo, prev.tariffs, exitTimestamp);
-      const updatedRow = { ...row, Salida: exitTimestamp.toISOString(), Estado: 'Finalizado', Total: stats.total };
-      const next = { ...prev, data: prev.data.map(r => r.id === id ? updatedRow : r) };
-      syncWithCloud(next);
-      handlePrint(updatedRow);
-      return next;
-    });
-  };
-
-  const handleDeleteRow = (id: string) => {
-    setAppState(prev => {
-      const next = { ...prev, data: prev.data.filter(row => row.id !== id) };
-      syncWithCloud(next);
-      return next;
-    });
-  };
-
-  const handleSaveRowMutation = (updatedRow: SheetRow) => {
-    setAppState(prev => {
-      const exists = prev.data.find(r => r.id === updatedRow.id);
-      const newData = exists 
-        ? prev.data.map(r => r.id === updatedRow.id ? updatedRow : r)
-        : [...prev.data, updatedRow];
-      const next = { ...prev, data: newData };
-      syncWithCloud(next);
-      return next;
-    });
-    setShowEditModal(false);
-  };
-
-  const handleEditRow = (row: SheetRow) => { setRowToEdit(row); setShowEditModal(true); };
-  const handlePrint = (row: SheetRow) => { setRowToPrint(row); setShowPrintPreview(true); };
-
-  const handleConfirmPrint = async () => {
-    if (!rowToPrint) return;
-    const settings = appState.printSettings;
-    setShowPrintPreview(false);
-    
-    if (settings.hardware && settings.hardware.type !== 'system' && settings.hardware.connected) {
-       const result = await printToHardware(rowToPrint, settings, appState.tariffs, appState.currency);
-       if (!result.success) { alert("Error hardware: " + result.error); window.print(); }
-    } else {
-       setTimeout(() => window.print(), 150);
-    }
-
-    const historyItem: PrintHistoryItem = {
-      id: crypto.randomUUID(),
-      rowId: rowToPrint.id,
-      placa: rowToPrint.Placa,
-      tipo: rowToPrint.Tipo,
-      timestamp: new Date().toISOString(),
-      isExit: rowToPrint.Estado === 'Finalizado',
-      total: rowToPrint.Total
-    };
-    
-    setAppState(prev => {
-      const newHistory = [historyItem, ...prev.printHistory].slice(0, 50);
-      localStorage.setItem('parkAi_printHistory', JSON.stringify(newHistory));
-      return { ...prev, printHistory: newHistory };
-    });
-  };
-
-  const handleReprint = (historyId: string) => {
-    const item = appState.printHistory.find(h => h.id === historyId);
-    if (item) {
-      const row = appState.data.find(r => r.id === item.rowId);
-      if (row) handlePrint(row);
-    }
+  const handleEditRow = (row: SheetRow) => {
+    setRowToEdit(row);
+    setShowEditModal(true);
   };
 
   const handleOpenSettings = (tab: 'cloud' | 'tariffs' | 'printer' | 'history' = 'cloud') => {
@@ -287,13 +72,13 @@ const App: React.FC = () => {
         <div className="flex items-center gap-4">
           {sheetUrl && (
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase transition-all ${
-              syncStatus === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' : 
+              syncStatus === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
               syncStatus === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-              'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                'bg-blue-500/10 border-blue-500/20 text-blue-400'
             }`}>
-              {syncStatus === 'error' ? <AlertTriangle size={14} /> : 
-               syncStatus === 'success' ? <CheckCircle size={14} /> :
-               <Cloud size={14} className={isSyncing ? 'animate-pulse' : ''} />}
+              {syncStatus === 'error' ? <AlertTriangle size={14} /> :
+                syncStatus === 'success' ? <CheckCircle size={14} /> :
+                  <Cloud size={14} className={isSyncing ? 'animate-pulse' : ''} />}
               {isSyncing ? 'Sincronizando' : syncStatus === 'error' ? 'Error Nube' : syncStatus === 'success' ? 'Sincronizado' : 'Conectado'}
             </div>
           )}
@@ -349,18 +134,18 @@ const App: React.FC = () => {
       </div>
 
       {showSettingsModal && (
-        <SheetConnectionModal 
-          onClose={() => setShowSettingsModal(false)} 
+        <SheetConnectionModal
+          onClose={() => setShowSettingsModal(false)}
           initialTab={settingsInitialTab}
           onConnect={(url) => {
             setSheetUrl(url);
-            localStorage.setItem('parkAi_url', url);
+            setStorageItem(storageKeys.sheetUrl, url);
             setShowSettingsModal(false);
             handleSyncSheet(url);
           }}
           onDisconnect={() => {
             setSheetUrl(null);
-            localStorage.removeItem('parkAi_url');
+            removeStorageItem(storageKeys.sheetUrl);
             setShowSettingsModal(false);
           }}
           currentUrl={sheetUrl}
@@ -368,7 +153,10 @@ const App: React.FC = () => {
           currency={appState.currency}
           printSettings={appState.printSettings}
           printHistory={appState.printHistory}
-          onUpdatePrintHistory={(h) => setAppState(prev => ({...prev, printHistory: h}))}
+          onUpdatePrintHistory={(history) => {
+            setStorageJson(storageKeys.printHistory, history);
+            setAppState(prev => ({ ...prev, printHistory: history }));
+          }}
           onReprint={handleReprint}
           onSaveAllSettings={handleUpdateAllSettings}
         />
