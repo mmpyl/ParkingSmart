@@ -1,5 +1,5 @@
 
-// @google/genai types and interfaces for the parking application
+// Core types and interfaces for the parking application
 export interface SheetRow extends Record<string, string | number> {
   id: string;
   Placa: string;
