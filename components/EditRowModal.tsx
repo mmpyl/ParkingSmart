@@ -1,16 +1,18 @@
-
-import React, { useState, useEffect } from 'react';
-import { X, Save, Calendar, Car, Clock, Hash, Info, Tag } from 'lucide-react';
-import { SheetRow, Tariffs, PARKING_COLUMNS } from '../types';
+import React, { useMemo, useState } from 'react';
+import { X, Save, Calendar, Car, Clock, Hash, Info, Tag, AlertTriangle } from 'lucide-react';
+import { SheetRow, Tariffs } from '../types';
 
 interface EditRowModalProps {
-  row?: SheetRow; // Si no hay row, es creación
+  row?: SheetRow;
   onClose: () => void;
   onSave: (row: SheetRow) => void;
   tariffs: Tariffs;
+  existingRows: SheetRow[];
 }
 
-const EditRowModal: React.FC<EditRowModalProps> = ({ row, onClose, onSave, tariffs }) => {
+const normalizePlate = (value: string) => value.replace(/\s+/g, '').toUpperCase();
+
+const EditRowModal: React.FC<EditRowModalProps> = ({ row, onClose, onSave, tariffs, existingRows }) => {
   const [formData, setFormData] = useState<Partial<SheetRow>>({
     id: row?.id || crypto.randomUUID(),
     Placa: row?.Placa || '',
@@ -22,13 +24,53 @@ const EditRowModal: React.FC<EditRowModalProps> = ({ row, onClose, onSave, tarif
     Total: row?.Total || 0
   });
 
-  const handleChange = (field: keyof SheetRow, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (field: keyof SheetRow, value: string | number) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  const validationError = useMemo(() => {
+    const normalizedPlate = normalizePlate(String(formData.Placa || ''));
+
+    if (!normalizedPlate) return 'La placa es obligatoria.';
+
+    const hasDuplicateActive = existingRows.some((item) =>
+      item.id !== formData.id &&
+      item.Estado === 'Activo' &&
+      formData.Estado === 'Activo' &&
+      normalizePlate(String(item.Placa)) === normalizedPlate
+    );
+
+    if (hasDuplicateActive) {
+      return 'No se puede guardar: la placa ya tiene un registro activo.';
+    }
+
+    if (formData.Estado === 'Finalizado') {
+      if (!formData.Salida || formData.Salida === '-') {
+        return 'Para estado Finalizado debes indicar fecha de salida.';
+      }
+
+      if (new Date(String(formData.Salida)).getTime() < new Date(String(formData.Entrada)).getTime()) {
+        return 'La fecha de salida no puede ser anterior a la fecha de entrada.';
+      }
+
+      if ((Number(formData.Total) || 0) < 0) {
+        return 'El total cobrado no puede ser negativo.';
+      }
+    }
+
+    return null;
+  }, [existingRows, formData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData as SheetRow);
+    if (validationError) return;
+
+    onSave({
+      ...(formData as SheetRow),
+      Placa: normalizePlate(String(formData.Placa || '')),
+      Salida: formData.Estado === 'Finalizado' ? String(formData.Salida || '-') : '-',
+      Total: formData.Estado === 'Finalizado' ? Number(formData.Total || 0) : 0
+    });
   };
 
   return (
@@ -52,6 +94,13 @@ const EditRowModal: React.FC<EditRowModalProps> = ({ row, onClose, onSave, tarif
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-auto p-8 space-y-6 custom-scrollbar">
+          {validationError && (
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-bold flex items-start gap-2">
+              <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+              <span>{validationError}</span>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -61,7 +110,7 @@ const EditRowModal: React.FC<EditRowModalProps> = ({ row, onClose, onSave, tarif
                 required
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold uppercase focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 value={formData.Placa}
-                onChange={e => handleChange('Placa', e.target.value.toUpperCase())}
+                onChange={e => handleChange('Placa', normalizePlate(e.target.value))}
                 placeholder="ABC-123"
               />
             </div>
@@ -119,7 +168,7 @@ const EditRowModal: React.FC<EditRowModalProps> = ({ row, onClose, onSave, tarif
           </div>
 
           {formData.Estado === 'Finalizado' && (
-            <div className="grid grid-cols-2 gap-4 animate-in slide-in-from-top-2">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
                   <Calendar size={12} /> Fecha Salida
@@ -137,9 +186,10 @@ const EditRowModal: React.FC<EditRowModalProps> = ({ row, onClose, onSave, tarif
                 </label>
                 <input
                   type="number"
+                  min={0}
                   className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-blue-600 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                   value={formData.Total}
-                  onChange={e => handleChange('Total', parseFloat(e.target.value))}
+                  onChange={e => handleChange('Total', parseFloat(e.target.value || '0'))}
                 />
               </div>
             </div>
@@ -156,7 +206,8 @@ const EditRowModal: React.FC<EditRowModalProps> = ({ row, onClose, onSave, tarif
           </button>
           <button
             onClick={handleSubmit}
-            className="flex-[2] px-6 py-4 rounded-2xl bg-blue-600 text-white font-black uppercase tracking-widest text-[10px] hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 flex items-center justify-center gap-2"
+            disabled={!!validationError}
+            className="flex-[2] px-6 py-4 rounded-2xl bg-blue-600 disabled:bg-slate-300 disabled:shadow-none text-white font-black uppercase tracking-widest text-[10px] hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20 flex items-center justify-center gap-2"
           >
             <Save size={16} />
             Guardar Cambios

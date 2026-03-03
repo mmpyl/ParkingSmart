@@ -31,6 +31,10 @@
         background: #94a3b8;
       }
 
+      #ticket-print-container {
+        display: none;
+      }
+
       /* PRINT STYLES */
       @media print {
         @page {
@@ -41,6 +45,9 @@
         }
         #ticket-print-container, #ticket-print-container * {
           visibility: visible;
+        }
+        #ticket-print-container {
+          display: block;
         }
         #ticket-print-container {
           position: absolute;
@@ -59,7 +66,6 @@
   <script type="importmap">
 {
   "imports": {
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
     "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/",
