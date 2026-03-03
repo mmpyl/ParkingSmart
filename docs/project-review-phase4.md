@@ -31,8 +31,8 @@ La estructura por features ya está aplicada y funcionando:
 1. **Pruebas automáticas**
    - Aún no hay unit tests para funciones críticas (`calculateParkingStats`, `formatCurrency`) ni tests de hooks.
 
-2. **Código IA no integrado**
-   - `ChatInterface` y `geminiService` siguen sin integrarse al shell principal.
+2. **Módulo IA descontinuado para reducir deuda técnica**
+   - Se eliminó el módulo no integrado (`ChatInterface` y `geminiService`) para simplificar mantenimiento.
 
 3. **Contrato del backend Apps Script**
    - Mantener documentado y versionado el formato de respuesta `{ status: 'success' | 'error' }`.
