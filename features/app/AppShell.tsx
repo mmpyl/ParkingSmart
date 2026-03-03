@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { PlusCircle, WifiOff } from 'lucide-react';
+import { PlusCircle, WifiOff, AlertTriangle } from 'lucide-react';
 import DataGrid from '../../components/DataGrid';
 import SheetConnectionModal from '../../components/SheetConnectionModal';
 import QuickEntryActions from '../../components/QuickEntryActions';
@@ -23,7 +23,7 @@ const AppShell: React.FC = () => {
   const [rowToEdit, setRowToEdit] = useState<SheetRow | undefined>(undefined);
   const [sheetUrl, setSheetUrl] = useState<string | null>(() => getStorageItem(storageKeys.sheetUrl));
 
-  const { isSyncing, syncStatus, lastError, syncWithCloud, handleSyncSheet } = useCloudSync({ sheetUrl, setAppState });
+  const { isSyncing, syncStatus, lastError, syncNotice, syncWithCloud, handleSyncSheet } = useCloudSync({ sheetUrl, setAppState });
   const { rowToPrint, showPrintPreview, setShowPrintPreview, handlePrint, handleConfirmPrint, handleReprint } = usePrintManager({ appState, setAppState });
 
   const { handleUpdateAllSettings, handleQuickRegister, handleRegisterExit, handleDeleteRow, handleSaveRowMutation } = useParkingActions({
@@ -70,6 +70,18 @@ const AppShell: React.FC = () => {
       <div className="flex flex-1 overflow-hidden no-print">
         <main className="flex-1 overflow-auto p-8 custom-scrollbar">
           <div className="max-w-6xl mx-auto">
+            {syncNotice && (
+              <div className="mb-6 bg-amber-50 border-2 border-amber-100 p-6 rounded-3xl">
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-amber-100 text-amber-700 rounded-xl"><AlertTriangle size={24} /></div>
+                  <div className="flex-1">
+                    <h4 className="text-amber-900 font-black uppercase text-xs tracking-widest mb-1">Sincronización en modo compatibilidad</h4>
+                    <p className="text-amber-700 text-sm whitespace-pre-wrap font-medium">{syncNotice}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {syncStatus === 'error' && lastError && (
               <div className="mb-6 bg-red-50 border-2 border-red-100 p-6 rounded-3xl animate-in slide-in-from-top-4">
                 <div className="flex items-start gap-4">

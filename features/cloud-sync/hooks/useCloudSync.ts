@@ -17,6 +17,7 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
   const [lastError, setLastError] = useState<string | null>(null);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
   const idleTimeoutRef = useRef<number | null>(null);
 
   // Control de concurrencia: evita perder cambios cuando hay múltiples mutaciones seguidas.
@@ -46,6 +47,7 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
     setIsSyncing(true);
     setSyncStatus('syncing');
     setLastError(null);
+    setSyncNotice(null);
 
     try {
       const payload: SheetPayload = {
@@ -65,7 +67,7 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
         setSyncSuccess();
 
         if (result.unverified && result.error) {
-          setLastError(result.error);
+          setSyncNotice(result.error);
         }
       } else {
         setSyncStatus('error');
@@ -104,6 +106,7 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
     setIsSyncing(true);
     setSyncStatus('syncing');
     setLastError(null);
+    setSyncNotice(null);
 
     try {
       const result = await fetchSheetData(url);
@@ -134,6 +137,7 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
     isSyncing,
     syncStatus,
     lastError,
+    syncNotice,
     syncWithCloud,
     handleSyncSheet
   };
