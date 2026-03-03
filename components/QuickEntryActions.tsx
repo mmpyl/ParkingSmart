@@ -10,6 +10,8 @@ interface QuickEntryActionsProps {
   onOpenSettings?: () => void;
 }
 
+const normalizePlate = (value: string) => value.replace(/\s+/g, '').toUpperCase();
+
 const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, history, tariffs, onOpenSettings }) => {
   const [showForm, setShowForm] = useState(false);
   const [selectedType, setSelectedType] = useState('');
@@ -37,7 +39,7 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
     return new Set(
       history
         .filter(row => row.Estado === 'Activo')
-        .map(row => row.Placa.toUpperCase())
+        .map(row => normalizePlate(String(row.Placa)))
     );
   }, [history]);
 
@@ -45,7 +47,7 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
     const map = new Map<string, { vehiculo: string; tipo: string }>();
     [...history].forEach(row => {
       if (row.Placa && row.Placa !== '-') {
-        map.set(row.Placa.toUpperCase(), { 
+        map.set(normalizePlate(String(row.Placa)), { 
           vehiculo: String(row.Vehiculo), 
           tipo: String(row.Tipo) 
         });
@@ -54,11 +56,11 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
     return map;
   }, [history]);
 
-  const isPlacaActive = activePlates.has(placa.toUpperCase());
+  const isPlacaActive = activePlates.has(normalizePlate(placa));
 
   const suggestions = useMemo(() => {
     if (!placa.trim()) return [];
-    const search = placa.toUpperCase();
+    const search = normalizePlate(placa);
     return Array.from(plateHistory.keys())
       .filter((p: string) => p.includes(search) && p !== search)
       .slice(0, 5);
@@ -87,7 +89,7 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (placa.trim() && !isPlacaActive) {
-      onRegister(selectedType, placa.toUpperCase(), vehiculo || `${selectedType} genérico`);
+      onRegister(selectedType, normalizePlate(placa), vehiculo || `${selectedType} genérico`);
       setPlaca('');
       setVehiculo('');
       setShowForm(false);

@@ -2,6 +2,8 @@ import { useCallback } from 'react';
 import { type Dispatch, type SetStateAction } from 'react';
 import { AppState, SheetRow, Tariffs, PrintSettings, BillingUnit, calculateParkingStats } from '../../../types';
 
+const normalizePlate = (value: string) => value.replace(/\s+/g, '').toUpperCase();
+
 interface UseParkingActionsParams {
   setAppState: Dispatch<SetStateAction<AppState>>;
   syncWithCloud: (stateToSync: AppState) => Promise<void>;
@@ -24,12 +26,16 @@ export const useParkingActions = ({
   }, [setAppState, syncWithCloud]);
 
   const handleQuickRegister = useCallback((tipo: string, placa: string, vehiculo: string) => {
+    const normalizedPlate = normalizePlate(placa);
+
     setAppState(prev => {
-      if (prev.data.some(r => r.Placa.toUpperCase() === placa.toUpperCase() && r.Estado === 'Activo')) return prev;
+      if (!normalizedPlate) return prev;
+
+      if (prev.data.some(r => normalizePlate(String(r.Placa)) === normalizedPlate && r.Estado === 'Activo')) return prev;
 
       const newEntry: SheetRow = {
         id: crypto.randomUUID(),
-        Placa: placa.toUpperCase(),
+        Placa: normalizedPlate,
         Vehiculo: vehiculo,
         Tipo: tipo,
         Entrada: new Date().toISOString(),
@@ -70,10 +76,22 @@ export const useParkingActions = ({
 
   const handleSaveRowMutation = useCallback((updatedRow: SheetRow) => {
     setAppState(prev => {
-      const exists = prev.data.find(r => r.id === updatedRow.id);
+      const normalizedPlate = normalizePlate(String(updatedRow.Placa || ''));
+      const normalizedRow = { ...updatedRow, Placa: normalizedPlate };
+
+      const hasAnotherActiveWithSamePlate = prev.data.some((row) =>
+        row.id !== normalizedRow.id &&
+        row.Estado === 'Activo' &&
+        normalizedRow.Estado === 'Activo' &&
+        normalizePlate(String(row.Placa)) === normalizedPlate
+      );
+
+      if (hasAnotherActiveWithSamePlate) return prev;
+
+      const exists = prev.data.find(r => r.id === normalizedRow.id);
       const newData = exists
-        ? prev.data.map(r => r.id === updatedRow.id ? updatedRow : r)
-        : [...prev.data, updatedRow];
+        ? prev.data.map(r => r.id === normalizedRow.id ? normalizedRow : r)
+        : [...prev.data, normalizedRow];
       const next = { ...prev, data: newData };
       syncWithCloud(next);
       return next;
