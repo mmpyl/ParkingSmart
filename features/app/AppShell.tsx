@@ -22,6 +22,7 @@ const AppShell: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [rowToEdit, setRowToEdit] = useState<SheetRow | undefined>(undefined);
   const [sheetUrl, setSheetUrl] = useState<string | null>(() => getStorageItem(storageKeys.sheetUrl));
+  const [activeView, setActiveView] = useState<'dashboard' | 'operation'>('operation');
 
   const { isSyncing, syncStatus, lastError, syncNotice, syncWithCloud, handleSyncSheet } = useCloudSync({ sheetUrl, setAppState });
   const { rowToPrint, showPrintPreview, setShowPrintPreview, handlePrint, handleConfirmPrint, handleReprint } = usePrintManager({ appState, setAppState });
@@ -96,16 +97,36 @@ const AppShell: React.FC = () => {
               </div>
             )}
 
-            <AppDashboard appState={appState} />
-            <QuickEntryActions onRegister={handleQuickRegister} history={appState.data} tariffs={appState.tariffs} onOpenSettings={() => handleOpenSettings('tariffs')} />
-            <ActiveVehiclesGrid data={appState.data} onRegisterExit={handleRegisterExit} onPrintTicket={handlePrint} tariffs={appState.tariffs} currency={appState.currency} billingUnit={appState.billingUnit} />
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-black text-slate-500 uppercase tracking-widest">Historial</h2>
-              <button onClick={() => { setRowToEdit(undefined); setShowEditModal(true); }} className="bg-white border border-slate-200 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50">
-                <PlusCircle size={14} className="inline mr-2" /> Manual
+            <div className="mb-6 inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
+              <button
+                onClick={() => setActiveView('operation')}
+                className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-colors ${activeView === 'operation' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                Operación
+              </button>
+              <button
+                onClick={() => setActiveView('dashboard')}
+                className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-colors ${activeView === 'dashboard' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                Dashboard
               </button>
             </div>
-            <DataGrid columns={appState.columns} data={appState.data} onDeleteRow={handleDeleteRow} onEditRow={handleEditRow} onPrintTicket={handlePrint} currency={appState.currency} />
+
+            {activeView === 'dashboard' ? (
+              <AppDashboard appState={appState} />
+            ) : (
+              <>
+                <QuickEntryActions onRegister={handleQuickRegister} history={appState.data} tariffs={appState.tariffs} onOpenSettings={() => handleOpenSettings('tariffs')} />
+                <ActiveVehiclesGrid data={appState.data} onRegisterExit={handleRegisterExit} onPrintTicket={handlePrint} tariffs={appState.tariffs} currency={appState.currency} billingUnit={appState.billingUnit} />
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-sm font-black text-slate-500 uppercase tracking-widest">Historial</h2>
+                  <button onClick={() => { setRowToEdit(undefined); setShowEditModal(true); }} className="bg-white border border-slate-200 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50">
+                    <PlusCircle size={14} className="inline mr-2" /> Manual
+                  </button>
+                </div>
+                <DataGrid columns={appState.columns} data={appState.data} onDeleteRow={handleDeleteRow} onEditRow={handleEditRow} onPrintTicket={handlePrint} currency={appState.currency} />
+              </>
+            )}
           </div>
         </main>
       </div>
