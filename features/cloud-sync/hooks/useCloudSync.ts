@@ -19,6 +19,10 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
   const [lastError, setLastError] = useState<string | null>(null);
   const idleTimeoutRef = useRef<number | null>(null);
 
+  // Control de concurrencia: evita perder cambios cuando hay múltiples mutaciones seguidas.
+  const syncingRef = useRef(false);
+  const pendingStateRef = useRef<AppState | null>(null);
+
   const setSyncSuccess = useCallback(() => {
     setSyncStatus('success');
     if (idleTimeoutRef.current) {
@@ -35,9 +39,10 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
     };
   }, []);
 
-  const syncWithCloud = useCallback(async (stateToSync: AppState) => {
-    if (!sheetUrl || isSyncing) return;
+  const runCloudSave = useCallback(async (stateToSync: AppState) => {
+    if (!sheetUrl) return;
 
+    syncingRef.current = true;
     setIsSyncing(true);
     setSyncStatus('syncing');
     setLastError(null);
@@ -70,12 +75,31 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
       setSyncStatus('error');
       setLastError(getErrorMessage(error));
     } finally {
+      syncingRef.current = false;
       setIsSyncing(false);
+
+      // Si hubo cambios durante el guardado, sincroniza la última versión pendiente.
+      const pending = pendingStateRef.current;
+      pendingStateRef.current = null;
+      if (pending && sheetUrl) {
+        await runCloudSave(pending);
+      }
     }
-  }, [isSyncing, setAppState, setSyncSuccess, sheetUrl]);
+  }, [setAppState, setSyncSuccess, sheetUrl]);
+
+  const syncWithCloud = useCallback(async (stateToSync: AppState) => {
+    if (!sheetUrl) return;
+
+    if (syncingRef.current) {
+      pendingStateRef.current = stateToSync;
+      return;
+    }
+
+    await runCloudSave(stateToSync);
+  }, [runCloudSave, sheetUrl]);
 
   const handleSyncSheet = useCallback(async (url: string) => {
-    if (!url || isSyncing) return;
+    if (!url || syncingRef.current) return;
 
     setIsSyncing(true);
     setSyncStatus('syncing');
@@ -104,7 +128,7 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
     } finally {
       setIsSyncing(false);
     }
-  }, [isSyncing, setAppState, setSyncSuccess]);
+  }, [setAppState, setSyncSuccess]);
 
   return {
     isSyncing,
