@@ -28,8 +28,9 @@ La estructura por features ya está aplicada y funcionando:
 
 ## Riesgos / pendientes recomendados
 
-1. **Pruebas automáticas**
-   - Aún no hay unit tests para funciones críticas (`calculateParkingStats`, `formatCurrency`) ni tests de hooks.
+1. **Pruebas automáticas (avance parcial)**
+   - Ya existen tests base para utilidades (`calculateParkingStats`, `formatCurrency`) y un test de integración mockeado de sync.
+   - Pendiente: ampliar cobertura a hooks y flujos UI críticos.
 
 2. **Módulo IA descontinuado para reducir deuda técnica**
    - Se eliminó el módulo no integrado (`ChatInterface` y `geminiService`) para simplificar mantenimiento.
@@ -39,9 +40,9 @@ La estructura por features ya está aplicada y funcionando:
 
 ## Plan corto sugerido (siguiente iteración)
 
-1. Agregar `vitest` + 3 tests unitarios iniciales para utilidades de `types.ts`.
-2. Agregar test de integración básico para flujo de sync (mock de `fetch`).
-3. Definir si el módulo de IA se activa en UI o se elimina para reducir deuda técnica.
+1. Mantener `vitest` y ampliar cobertura a hooks (`useCloudSync`, `useParkingActions`, `usePrintManager`).
+2. Añadir smoke tests de composición para `AppShell` (render + acciones principales mockeadas).
+3. Versionar y validar contrato Apps Script en tests (casos de error/timeout).
 
 ## Validación ejecutada
 
