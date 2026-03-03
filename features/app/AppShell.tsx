@@ -13,7 +13,7 @@ import { useCloudSync } from '../cloud-sync';
 import { useAppState, useParkingActions } from '../parking';
 import { usePrintManager } from '../printing';
 import { getStorageItem, removeStorageItem, setStorageItem, setStorageJson, storageKeys } from '../shared';
-import { AppHeader, AppStats } from './components';
+import { AppDashboard, AppHeader } from './components';
 
 const AppShell: React.FC = () => {
   const [appState, setAppState] = useAppState();
@@ -96,7 +96,7 @@ const AppShell: React.FC = () => {
               </div>
             )}
 
-            <AppStats appState={appState} />
+            <AppDashboard appState={appState} />
             <QuickEntryActions onRegister={handleQuickRegister} history={appState.data} tariffs={appState.tariffs} onOpenSettings={() => handleOpenSettings('tariffs')} />
             <ActiveVehiclesGrid data={appState.data} onRegisterExit={handleRegisterExit} onPrintTicket={handlePrint} tariffs={appState.tariffs} currency={appState.currency} billingUnit={appState.billingUnit} />
             <div className="mb-4 flex items-center justify-between">
