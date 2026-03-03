@@ -1,5 +1,127 @@
 /*
- * Archivo base de estilos globales.
- * Se mantiene intencionalmente liviano para evitar warnings de build
- * y centralizar overrides globales futuros fuera de index.html.
+ * Design tokens and semantic UI primitives for the app.
+ * Keep this file framework-agnostic (no @apply) because styles are served directly.
  */
+
+:root {
+  --pm-surface: #ffffff;
+  --pm-surface-soft: #f8fafc;
+  --pm-border: #e2e8f0;
+  --pm-text: #0f172a;
+  --pm-text-muted: #64748b;
+  --pm-primary: #4f46e5;
+  --pm-primary-soft: #eef2ff;
+  --pm-success: #059669;
+  --pm-success-soft: #d1fae5;
+  --pm-info: #2563eb;
+  --pm-info-soft: #dbeafe;
+  --pm-radius-lg: 1rem;
+  --pm-radius-xl: 1.5rem;
+  --pm-shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
+}
+
+.pm-card {
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius-xl);
+  box-shadow: var(--pm-shadow-sm);
+}
+
+.pm-card-soft {
+  background: var(--pm-surface-soft);
+  border: 1px solid #f1f5f9;
+  border-radius: var(--pm-radius-lg);
+}
+
+.pm-section-title {
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--pm-text-muted);
+}
+
+.pm-kpi-label {
+  font-size: 0.625rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.pm-kpi-value {
+  margin-top: 0.75rem;
+  font-weight: 900;
+  color: var(--pm-text);
+}
+
+.pm-kpi-value--lg {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+}
+
+.pm-kpi-value--md {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.pm-kpi-value--success {
+  color: var(--pm-success);
+}
+
+.pm-kpi-value--primary {
+  color: var(--pm-primary);
+}
+
+.pm-status-chip {
+  border-radius: 9999px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.pm-status-chip--active {
+  background: var(--pm-info-soft);
+  color: var(--pm-info);
+}
+
+.pm-status-chip--done {
+  background: var(--pm-success-soft);
+  color: var(--pm-success);
+}
+
+
+.pm-toolbar-btn {
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  color: #94a3b8;
+  transition: color 180ms ease;
+}
+
+.pm-toolbar-btn:hover {
+  color: #ffffff;
+}
+
+.pm-toolbar-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.pm-sync-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid;
+  font-size: 0.625rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pm-sync-chip--error { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.2); color: #f87171; }
+.pm-sync-chip--success { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.pm-sync-chip--idle { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); color: #60a5fa; }

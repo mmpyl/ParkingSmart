@@ -25,10 +25,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 
       <div className="flex items-center gap-4">
         {sheetUrl && (
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase transition-all ${
-            syncStatus === 'error' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
-            syncStatus === 'success' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
-              'bg-blue-500/10 border-blue-500/20 text-blue-400'
+          <div className={`pm-sync-chip ${
+            syncStatus === 'error' ? 'pm-sync-chip--error' :
+            syncStatus === 'success' ? 'pm-sync-chip--success' :
+              'pm-sync-chip--idle'
           }`}>
             {syncStatus === 'error' ? <AlertTriangle size={14} /> :
               syncStatus === 'success' ? <CheckCircle size={14} /> :
@@ -37,10 +37,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({
           </div>
         )}
 
-        <button onClick={onSync} disabled={isSyncing || !sheetUrl} className="p-2 text-slate-400 hover:text-white rounded-lg transition-all disabled:opacity-30">
+        <button onClick={onSync} disabled={isSyncing || !sheetUrl} className="pm-toolbar-btn">
           <RefreshCw size={20} className={isSyncing ? 'animate-spin' : ''} />
         </button>
-        <button onClick={onOpenSettings} className="p-2 text-slate-400 hover:text-white rounded-lg transition-all"><Settings size={20} /></button>
+        <button onClick={onOpenSettings} className="pm-toolbar-btn"><Settings size={20} /></button>
       </div>
     </header>
   );
