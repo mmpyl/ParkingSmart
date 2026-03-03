@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Car, CircleDollarSign, Clock3, TrendingUp } from 'lucide-react';
+import { Activity, CalendarClock, Car, CircleDollarSign, Clock3, TrendingUp } from 'lucide-react';
 import { AppState, formatCurrency } from '../../../types';
 
 interface AppDashboardProps {
@@ -20,9 +20,35 @@ const AppDashboard: React.FC<AppDashboardProps> = ({ appState }) => {
 
   const maxTypeCount = Math.max(1, ...Object.values(typeCount));
 
-  const recentRows = [...appState.data]
-    .sort((a, b) => new Date(b.Entrada).getTime() - new Date(a.Entrada).getTime())
-    .slice(0, 5);
+  const timelineByDay = appState.data.reduce<Record<string, { dateLabel: string; entries: number; exits: number; revenue: number }>>((acc, row) => {
+    const date = new Date(row.Entrada);
+    const dayKey = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+
+    if (!acc[dayKey]) {
+      acc[dayKey] = {
+        dateLabel: date.toLocaleDateString('es-CO', { weekday: 'short', day: '2-digit', month: 'short' }),
+        entries: 0,
+        exits: 0,
+        revenue: 0
+      };
+    }
+
+    acc[dayKey].entries += 1;
+
+    if (row.Estado === 'Finalizado') {
+      acc[dayKey].exits += 1;
+      acc[dayKey].revenue += Number(row.Total) || 0;
+    }
+
+    return acc;
+  }, {});
+
+  const timelineItems = Object.entries(timelineByDay)
+    .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+    .slice(0, 7)
+    .map(([key, value]) => ({ id: key, ...value }));
+
+  const maxTimelineEntries = Math.max(1, ...timelineItems.map((item) => item.entries));
 
   return (
     <section className="mb-8 space-y-4">
@@ -90,20 +116,26 @@ const AppDashboard: React.FC<AppDashboardProps> = ({ appState }) => {
         </div>
 
         <div className="pm-card p-5">
-          <h3 className="pm-section-title mb-4">Últimos ingresos</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="pm-section-title">Línea de tiempo</h3>
+            <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1"><CalendarClock size={12} /> Últimos 7 días con movimiento</span>
+          </div>
           <div className="space-y-2">
-            {recentRows.length === 0 && (
+            {timelineItems.length === 0 && (
               <p className="text-xs text-slate-400 font-semibold">No hay movimientos recientes.</p>
             )}
-            {recentRows.map((row) => (
-              <div key={row.id} className="pm-card-soft flex items-center justify-between px-3 py-2">
-                <div>
-                  <div className="text-xs font-black text-slate-800">{row.Placa}</div>
-                  <div className="text-[10px] font-semibold text-slate-500">{row.Tipo} · {new Date(row.Entrada).toLocaleString()}</div>
+            {timelineItems.map((item) => (
+              <div key={item.id} className="pm-card-soft px-3 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs font-black text-slate-800 uppercase">{item.dateLabel}</div>
+                  <div className="text-[10px] font-bold text-emerald-600">{formatCurrency(item.revenue, appState.currency)}</div>
                 </div>
-                <span className={`pm-status-chip ${row.Estado === 'Activo' ? 'pm-status-chip--active' : 'pm-status-chip--done'}`}>
-                  {row.Estado}
-                </span>
+                <div className="h-2 bg-slate-200 rounded-full overflow-hidden mb-2">
+                  <div className="h-full bg-indigo-500" style={{ width: `${(item.entries / maxTimelineEntries) * 100}%` }} />
+                </div>
+                <div className="text-[10px] text-slate-500 font-semibold">
+                  Ingresos: {item.entries} · Salidas: {item.exits}
+                </div>
               </div>
             ))}
           </div>
