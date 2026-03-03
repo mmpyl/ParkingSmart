@@ -31,6 +31,10 @@
         background: #94a3b8;
       }
 
+      #ticket-print-container {
+        display: none;
+      }
+
       /* PRINT STYLES */
       @media print {
         @page {
@@ -41,6 +45,9 @@
         }
         #ticket-print-container, #ticket-print-container * {
           visibility: visible;
+        }
+        #ticket-print-container {
+          display: block;
         }
         #ticket-print-container {
           position: absolute;
