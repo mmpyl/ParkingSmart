@@ -10,7 +10,12 @@ import { getStorageItem, getStorageJson, storageKeys } from '../../shared/servic
 
 const getInitialAppState = (): AppState => {
   try {
-    const parsedPrintSettings = getStorageJson(storageKeys.printSettings, DEFAULT_PRINT_SETTINGS);
+    const storedPrintSettings = getStorageJson(storageKeys.printSettings, DEFAULT_PRINT_SETTINGS);
+    const parsedPrintSettings = {
+      ...DEFAULT_PRINT_SETTINGS,
+      ...storedPrintSettings,
+      hardware: storedPrintSettings?.hardware ?? DEFAULT_PRINT_SETTINGS.hardware
+    };
 
     if (parsedPrintSettings.hardware) {
       parsedPrintSettings.hardware.connected = false;

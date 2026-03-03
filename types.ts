@@ -41,6 +41,7 @@ export interface PrintSettings {
   footerMessage: string;
   autoPrintEntry: boolean;
   paperWidth: '58mm' | '80mm';
+  showQrOnTicket: boolean;
   hardware?: PrinterHardware;
 }
 
@@ -85,6 +86,7 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   footerMessage: 'Gracias por su confianza. No nos hacemos responsables por objetos de valor no reportados.',
   autoPrintEntry: false,
   paperWidth: '80mm',
+  showQrOnTicket: true,
   hardware: {
     type: 'system',
     name: 'Impresora del Sistema',
