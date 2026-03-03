@@ -58,6 +58,10 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
         setAppState(prev => ({ ...prev, lastSynced: now }));
         setStorageItem(storageKeys.lastSynced, now);
         setSyncSuccess();
+
+        if (result.unverified && result.error) {
+          setLastError(result.error);
+        }
       } else {
         setSyncStatus('error');
         setLastError(result.error || 'Error al guardar: Verifique el script en Google Sheets.');

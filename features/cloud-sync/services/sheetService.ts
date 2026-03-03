@@ -85,12 +85,15 @@ export const fetchSheetData = async (scriptUrl: string): Promise<SheetPayload | 
 export interface SaveSheetResult {
   ok: boolean;
   error?: string;
+  unverified?: boolean;
 }
 
 export const saveSheetData = async (scriptUrl: string, payload: SheetPayload): Promise<SaveSheetResult> => {
   if (!scriptUrl) return { ok: false, error: "URL de script no configurada." };
+
+  const cleanUrl = getCleanUrl(scriptUrl);
+
   try {
-    const cleanUrl = getCleanUrl(scriptUrl);
     const response = await fetch(cleanUrl, {
       method: 'POST',
       mode: 'cors',
@@ -110,10 +113,28 @@ export const saveSheetData = async (scriptUrl: string, payload: SheetPayload): P
 
     return { ok: true };
   } catch (error) {
-    console.error("Error guardando en la nube:", error);
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Error desconocido"
-    };
+    // Algunos despliegues de Apps Script no exponen CORS en POST.
+    // Fallback a no-cors para mantener compatibilidad (resultado no verificable).
+    try {
+      await fetch(cleanUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+      });
+
+      return {
+        ok: true,
+        unverified: true,
+        error: 'Guardado enviado en modo compatibilidad (no-cors). Verifique en la hoja si no observa cambios inmediatos.'
+      };
+    } catch (fallbackError) {
+      console.error("Error guardando en la nube:", fallbackError);
+      return {
+        ok: false,
+        error: fallbackError instanceof Error ? fallbackError.message : "Error desconocido"
+      };
+    }
   }
 };
