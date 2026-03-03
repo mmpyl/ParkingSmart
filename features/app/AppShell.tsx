@@ -166,7 +166,7 @@ const AppShell: React.FC = () => {
       )}
 
       {showEditModal && (
-        <EditRowModal row={rowToEdit} tariffs={appState.tariffs} onClose={() => setShowEditModal(false)} onSave={handleSaveRowMutation} />
+        <EditRowModal row={rowToEdit} tariffs={appState.tariffs} existingRows={appState.data} onClose={() => setShowEditModal(false)} onSave={handleSaveRowMutation} />
       )}
 
       {rowToPrint && createPortal(
