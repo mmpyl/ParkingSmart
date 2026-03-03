@@ -41,7 +41,8 @@ describe('sheet sync integration (mock fetch)', () => {
           businessName: 'X', nit: '1', address: 'A', phone: 'P', footerMessage: 'F', autoPrintEntry: false, paperWidth: '80mm',
           hardware: { type: 'system', name: 'Impresora', connected: true }
         },
-        currency: 'COP'
+        currency: 'COP',
+        billingUnit: 'hour'
       }
     });
 

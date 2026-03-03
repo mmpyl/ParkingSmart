@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { type Dispatch, type SetStateAction } from 'react';
-import { AppState, SheetRow, Tariffs, PrintSettings, calculateParkingStats } from '../../../types';
+import { AppState, SheetRow, Tariffs, PrintSettings, BillingUnit, calculateParkingStats } from '../../../types';
 
 interface UseParkingActionsParams {
   setAppState: Dispatch<SetStateAction<AppState>>;
@@ -15,9 +15,9 @@ export const useParkingActions = ({
   onRequestPrint,
   onCloseEditModal
 }: UseParkingActionsParams) => {
-  const handleUpdateAllSettings = useCallback((tariffs: Tariffs, printSettings: PrintSettings, currency: string) => {
+  const handleUpdateAllSettings = useCallback((tariffs: Tariffs, printSettings: PrintSettings, currency: string, billingUnit: BillingUnit) => {
     setAppState(prev => {
-      const next = { ...prev, tariffs, printSettings, currency };
+      const next = { ...prev, tariffs, printSettings, currency, billingUnit };
       syncWithCloud(next);
       return next;
     });
@@ -51,7 +51,7 @@ export const useParkingActions = ({
       if (!row) return prev;
 
       const exitTimestamp = new Date();
-      const stats = calculateParkingStats(row.Entrada, row.Tipo, prev.tariffs, exitTimestamp);
+      const stats = calculateParkingStats(row.Entrada, row.Tipo, prev.tariffs, exitTimestamp, prev.billingUnit);
       const updatedRow = { ...row, Salida: exitTimestamp.toISOString(), Estado: 'Finalizado', Total: stats.total };
       const next = { ...prev, data: prev.data.map(r => r.id === id ? updatedRow : r) };
       syncWithCloud(next);

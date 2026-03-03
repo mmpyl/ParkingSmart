@@ -41,6 +41,7 @@ const AppShell: React.FC = () => {
     setStorageJson(storageKeys.data, appState.data);
     setStorageJson(storageKeys.tariffs, appState.tariffs);
     setStorageItem(storageKeys.currency, appState.currency);
+    setStorageItem(storageKeys.billingUnit, appState.billingUnit);
     const serializablePrintSettings = {
       ...appState.printSettings,
       hardware: { ...appState.printSettings.hardware, device: undefined, interface: undefined }
@@ -97,7 +98,7 @@ const AppShell: React.FC = () => {
 
             <AppStats appState={appState} />
             <QuickEntryActions onRegister={handleQuickRegister} history={appState.data} tariffs={appState.tariffs} onOpenSettings={() => handleOpenSettings('tariffs')} />
-            <ActiveVehiclesGrid data={appState.data} onRegisterExit={handleRegisterExit} onPrintTicket={handlePrint} tariffs={appState.tariffs} currency={appState.currency} />
+            <ActiveVehiclesGrid data={appState.data} onRegisterExit={handleRegisterExit} onPrintTicket={handlePrint} tariffs={appState.tariffs} currency={appState.currency} billingUnit={appState.billingUnit} />
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-sm font-black text-slate-500 uppercase tracking-widest">Historial</h2>
               <button onClick={() => { setRowToEdit(undefined); setShowEditModal(true); }} className="bg-white border border-slate-200 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50">
@@ -134,12 +135,13 @@ const AppShell: React.FC = () => {
             setAppState(prev => ({ ...prev, printHistory: history }));
           }}
           onReprint={handleReprint}
+          billingUnit={appState.billingUnit}
           onSaveAllSettings={handleUpdateAllSettings}
         />
       )}
 
       {showPrintPreview && rowToPrint && (
-        <PrintPreviewModal row={rowToPrint} settings={appState.printSettings} tariffs={appState.tariffs} currency={appState.currency} onConfirm={handleConfirmPrint} onCancel={() => setShowPrintPreview(false)} />
+        <PrintPreviewModal row={rowToPrint} settings={appState.printSettings} tariffs={appState.tariffs} currency={appState.currency} billingUnit={appState.billingUnit} onConfirm={handleConfirmPrint} onCancel={() => setShowPrintPreview(false)} />
       )}
 
       {showEditModal && (
@@ -147,7 +149,7 @@ const AppShell: React.FC = () => {
       )}
 
       {rowToPrint && createPortal(
-        <TicketTemplate row={rowToPrint} settings={appState.printSettings} tariffs={appState.tariffs} currency={appState.currency} />,
+        <TicketTemplate row={rowToPrint} settings={appState.printSettings} tariffs={appState.tariffs} currency={appState.currency} billingUnit={appState.billingUnit} />,
         document.getElementById('ticket-print-container')!
       )}
     </div>

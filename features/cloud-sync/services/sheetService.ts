@@ -1,5 +1,5 @@
 
-import { SheetRow, Tariffs, PrintSettings } from "../../../types";
+import { SheetRow, Tariffs, PrintSettings, BillingUnit } from "../../../types";
 
 export interface SheetPayload {
   data: SheetRow[];
@@ -7,6 +7,7 @@ export interface SheetPayload {
     tariffs: Tariffs;
     printSettings: PrintSettings;
     currency: string;
+    billingUnit: BillingUnit;
   }
 }
 

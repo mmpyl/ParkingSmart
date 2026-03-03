@@ -12,6 +12,7 @@ export interface SheetRow extends Record<string, string | number> {
 }
 
 export type Tariffs = Record<string, number>;
+export type BillingUnit = 'hour' | 'day';
 
 export interface PrinterHardware {
   type: 'system' | 'bluetooth' | 'serial';
@@ -63,6 +64,7 @@ export interface AppState {
   printSettings: PrintSettings;
   printHistory: PrintHistoryItem[];
   currency: string;
+  billingUnit: BillingUnit;
   lastSynced?: string;
 }
 
@@ -118,31 +120,41 @@ export const formatCurrency = (amount: number | string, currencyCode: string = '
   }
 };
 
-export const calculateParkingStats = (entryDateStr: string, type: string, tariffs: Tariffs = DEFAULT_TARIFA, exitDate?: Date) => {
+export const calculateParkingStats = (
+  entryDateStr: string,
+  type: string,
+  tariffs: Tariffs = DEFAULT_TARIFA,
+  exitDate?: Date,
+  billingUnit: BillingUnit = 'hour'
+) => {
   try {
     const entry = new Date(entryDateStr);
     const now = exitDate || new Date();
     const diffMs = now.getTime() - entry.getTime();
     
-    if (diffMs < 0) return { durationText: '0m', total: 0, chargedHours: 0 };
+    if (diffMs < 0) return { durationText: '0m', total: 0, chargedUnits: 0, unitLabel: billingUnit === 'day' ? 'día' : 'hora' };
 
     const diffMins = Math.floor(diffMs / 60000);
     const hours = Math.floor(diffMins / 60);
     const mins = diffMins % 60;
     
-    const chargedHours = Math.max(1, Math.ceil(diffMins / 60));
+    const chargedUnits = billingUnit === 'day'
+      ? Math.max(1, Math.ceil(diffMins / 1440))
+      : Math.max(1, Math.ceil(diffMins / 60));
+
     const rate = tariffs[type] || tariffs['Default'] || 2000;
-    const total = chargedHours * rate;
+    const total = chargedUnits * rate;
 
     return {
       durationText: `${hours}h ${mins}m`,
       total,
-      chargedHours,
+      chargedUnits,
+      unitLabel: billingUnit === 'day' ? 'día' : 'hora',
       entryFormatted: entry.toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }),
       exitFormatted: now.toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
     };
   } catch (e) {
-    return { durationText: 'Error', total: 0, chargedHours: 0 };
+    return { durationText: 'Error', total: 0, chargedUnits: 0, unitLabel: billingUnit === 'day' ? 'día' : 'hora' };
   }
 };
 

@@ -55,7 +55,8 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
         settings: {
           tariffs: stateToSync.tariffs,
           printSettings: stateToSync.printSettings,
-          currency: stateToSync.currency
+          currency: stateToSync.currency,
+          billingUnit: stateToSync.billingUnit
         }
       };
 
@@ -121,7 +122,8 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
             ...(result.settings?.printSettings || prev.printSettings),
             hardware: prev.printSettings.hardware
           },
-          currency: result.settings?.currency || prev.currency
+          currency: result.settings?.currency || prev.currency,
+          billingUnit: result.settings?.billingUnit || prev.billingUnit
         }));
         setSyncSuccess();
       }

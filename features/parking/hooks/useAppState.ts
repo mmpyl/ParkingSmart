@@ -24,6 +24,7 @@ const getInitialAppState = (): AppState => {
       printSettings: parsedPrintSettings,
       printHistory: getStorageJson(storageKeys.printHistory, []),
       currency: getStorageItem(storageKeys.currency) || 'COP',
+      billingUnit: (getStorageItem(storageKeys.billingUnit) as 'hour' | 'day') || 'hour',
       lastSynced: getStorageItem(storageKeys.lastSynced) || undefined
     };
   } catch {
@@ -33,7 +34,8 @@ const getInitialAppState = (): AppState => {
       tariffs: DEFAULT_TARIFA,
       printSettings: DEFAULT_PRINT_SETTINGS,
       printHistory: [],
-      currency: 'COP'
+      currency: 'COP',
+      billingUnit: 'hour'
     };
   }
 };

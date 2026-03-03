@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { X, Link, Trash2, Wallet, Printer, Bluetooth, Usb, Cpu, AlertCircle, History, PrinterCheck, Edit2, Loader2, ExternalLink, Plus } from 'lucide-react';
-import { Tariffs, PrintSettings, CURRENCY_OPTIONS, PrinterHardware, DEFAULT_PRINT_SETTINGS, PrintHistoryItem } from '../types';
+import { Tariffs, PrintSettings, BillingUnit, CURRENCY_OPTIONS, PrinterHardware, DEFAULT_PRINT_SETTINGS, PrintHistoryItem } from '../types';
 
 interface SheetConnectionModalProps {
   onClose: () => void;
@@ -11,10 +11,11 @@ interface SheetConnectionModalProps {
   tariffs: Tariffs;
   currency: string;
   printSettings: PrintSettings;
+  billingUnit: BillingUnit;
   printHistory: PrintHistoryItem[];
   onUpdatePrintHistory: (newHistory: PrintHistoryItem[]) => void;
   onReprint: (historyId: string) => void;
-  onSaveAllSettings: (tariffs: Tariffs, printSettings: PrintSettings, currency: string) => void;
+  onSaveAllSettings: (tariffs: Tariffs, printSettings: PrintSettings, currency: string, billingUnit: BillingUnit) => void;
   initialTab?: 'cloud' | 'tariffs' | 'printer' | 'history';
 }
 
@@ -25,6 +26,7 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
   tariffs,
   currency,
   printSettings,
+  billingUnit,
   printHistory,
   onUpdatePrintHistory,
   onReprint,
@@ -36,6 +38,7 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
   const [localTariffs, setLocalTariffs] = useState<Tariffs>({ ...tariffs });
   const [localPrint, setLocalPrint] = useState<PrintSettings>({ ...printSettings });
   const [localCurrency, setLocalCurrency] = useState(currency);
+  const [localBillingUnit, setLocalBillingUnit] = useState<BillingUnit>(billingUnit);
   const [isSearchingHardware, setIsSearchingHardware] = useState<'bluetooth' | 'serial' | null>(null);
   const [hardwareError, setHardwareError] = useState<string | null>(null);
   
@@ -62,7 +65,7 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
   };
 
   const handleSaveAll = () => {
-    onSaveAllSettings(localTariffs, localPrint, localCurrency);
+    onSaveAllSettings(localTariffs, localPrint, localCurrency, localBillingUnit);
     onClose();
   };
 
@@ -200,6 +203,13 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
                   {CURRENCY_OPTIONS.map(opt => <option key={opt.code} value={opt.code}>{opt.code} - {opt.label}</option>)}
                 </select>
               </div>
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Cobro por</label>
+                <select value={localBillingUnit} onChange={(e) => setLocalBillingUnit(e.target.value as BillingUnit)} className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold">
+                  <option value="hour">Hora o fracción</option>
+                  <option value="day">Día o fracción</option>
+                </select>
+              </div>
               <div className="space-y-2">
                 {(Object.entries(localTariffs) as [string, number][]).map(([type, price]) => (
                   <div key={type} className="flex items-center gap-3 bg-white p-3 border border-slate-100 rounded-xl shadow-sm">
@@ -212,7 +222,7 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
                 <div id="new-tariff-form" className="bg-blue-50/50 p-4 rounded-xl border border-dashed border-blue-200 mt-4">
                   <div className="flex gap-2">
                     <input type="text" placeholder="Tipo" value={newTypeName} onChange={(e) => setNewTypeName(e.target.value)} className="flex-1 px-3 py-2 border rounded-lg text-xs font-bold" />
-                    <input type="number" placeholder="$/H" value={newTypePrice} onChange={(e) => setNewTypePrice(e.target.value)} className="w-20 px-3 py-2 border rounded-lg text-xs font-bold" />
+                    <input type="number" placeholder={localBillingUnit === 'day' ? '$/D' : '$/H'} value={newTypePrice} onChange={(e) => setNewTypePrice(e.target.value)} className="w-20 px-3 py-2 border rounded-lg text-xs font-bold" />
                     <button onClick={handleAddTariff} className="bg-blue-600 text-white p-2 rounded-lg"><Plus size={20} /></button>
                   </div>
                 </div>
