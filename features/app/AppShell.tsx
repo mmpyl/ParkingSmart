@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { PlusCircle, WifiOff, AlertTriangle } from 'lucide-react';
-import DataGrid from '../../components/DataGrid';
+import { WifiOff, AlertTriangle } from 'lucide-react';
 import SheetConnectionModal from '../../components/SheetConnectionModal';
-import QuickEntryActions from '../../components/QuickEntryActions';
-import ActiveVehiclesGrid from '../../components/ActiveVehiclesGrid';
 import TicketTemplate from '../../components/TicketTemplate';
 import PrintPreviewModal from '../../components/PrintPreviewModal';
 import EditRowModal from '../../components/EditRowModal';
@@ -13,7 +10,7 @@ import { useCloudSync } from '../cloud-sync';
 import { useAppState, useParkingActions } from '../parking';
 import { usePrintManager } from '../printing';
 import { getStorageItem, removeStorageItem, setStorageItem, setStorageJson, storageKeys } from '../shared';
-import { AppDashboard, AppHeader } from './components';
+import { AppDashboard, AppHeader, AppViewTabs, OperationView } from './components';
 
 const AppShell: React.FC = () => {
   const [appState, setAppState] = useAppState();
@@ -97,35 +94,21 @@ const AppShell: React.FC = () => {
               </div>
             )}
 
-            <div className="mb-6 inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
-              <button
-                onClick={() => setActiveView('operation')}
-                className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-colors ${activeView === 'operation' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-              >
-                Operación
-              </button>
-              <button
-                onClick={() => setActiveView('dashboard')}
-                className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-colors ${activeView === 'dashboard' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
-              >
-                Dashboard
-              </button>
-            </div>
+            <AppViewTabs activeView={activeView} onChangeView={setActiveView} />
 
             {activeView === 'dashboard' ? (
               <AppDashboard appState={appState} />
             ) : (
-              <>
-                <QuickEntryActions onRegister={handleQuickRegister} history={appState.data} tariffs={appState.tariffs} onOpenSettings={() => handleOpenSettings('tariffs')} />
-                <ActiveVehiclesGrid data={appState.data} onRegisterExit={handleRegisterExit} onPrintTicket={handlePrint} tariffs={appState.tariffs} currency={appState.currency} billingUnit={appState.billingUnit} />
-                <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-sm font-black text-slate-500 uppercase tracking-widest">Historial</h2>
-                  <button onClick={() => { setRowToEdit(undefined); setShowEditModal(true); }} className="bg-white border border-slate-200 text-blue-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50">
-                    <PlusCircle size={14} className="inline mr-2" /> Manual
-                  </button>
-                </div>
-                <DataGrid columns={appState.columns} data={appState.data} onDeleteRow={handleDeleteRow} onEditRow={handleEditRow} onPrintTicket={handlePrint} currency={appState.currency} />
-              </>
+              <OperationView
+                appState={appState}
+                onOpenSettingsTariffs={() => handleOpenSettings('tariffs')}
+                onPrint={handlePrint}
+                onRegisterExit={handleRegisterExit}
+                onDeleteRow={handleDeleteRow}
+                onEditRow={handleEditRow}
+                onOpenManualEntry={() => { setRowToEdit(undefined); setShowEditModal(true); }}
+                onQuickRegister={handleQuickRegister}
+              />
             )}
           </div>
         </main>
