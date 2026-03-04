@@ -1,17 +1,26 @@
 
 import React from 'react';
-import { SheetRow, PrintSettings, formatCurrency, calculateParkingStats, Tariffs } from '../types';
+import { SheetRow, PrintSettings, BillingUnit, formatCurrency, calculateParkingStats, Tariffs } from '../types';
 
 interface TicketTemplateProps {
   row: SheetRow;
   settings: PrintSettings;
   tariffs: Tariffs;
   currency?: string;
+  billingUnit?: BillingUnit;
 }
 
-const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs, currency = 'COP' }) => {
-  const stats = calculateParkingStats(row.Entrada, row.Tipo, tariffs, row.Salida !== '-' ? new Date(row.Salida) : undefined);
+const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs, currency = 'COP', billingUnit = 'hour' as BillingUnit }) => {
+  const stats = calculateParkingStats(row.Entrada, row.Tipo, tariffs, row.Salida !== '-' ? new Date(row.Salida) : undefined, billingUnit);
   const isExit = row.Estado === 'Finalizado';
+  const qrPayload = [
+    `Placa:${row.Placa}`,
+    `Tipo:${row.Tipo}`,
+    `Entrada:${row.Entrada}`,
+    isExit ? `Salida:${row.Salida}` : null,
+    isExit ? `Total:${row.Total}` : null
+  ].filter(Boolean).join(' | ');
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrPayload)}`;
 
   return (
     <div style={{ 
@@ -69,7 +78,7 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
 
       {isExit && (
         <div style={{ borderTop: '1px solid black', paddingTop: '8px', marginBottom: '10px', textAlign: 'center' }}>
-          <div style={{ fontSize: '10px' }}>VALOR HORA: {formatCurrency(tariffs[row.Tipo] || tariffs['Default'] || 0, currency)}</div>
+          <div style={{ fontSize: '10px' }}>VALOR {billingUnit === 'day' ? 'DÍA' : 'HORA'}: {formatCurrency(tariffs[row.Tipo] || tariffs['Default'] || 0, currency)}</div>
           <div style={{ fontSize: '16px', fontWeight: 'bold', marginTop: '4px' }}>
             TOTAL: {formatCurrency(row.Total, currency)}
           </div>
@@ -81,6 +90,13 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
           <div style={{ border: '1px solid black', padding: '10px', display: 'inline-block' }}>
             ESPACIO PARA SELLO
           </div>
+        </div>
+      )}
+
+      {settings.showQrOnTicket && (
+        <div style={{ borderTop: '1px dashed black', paddingTop: '8px', marginBottom: '8px', textAlign: 'center' }}>
+          <img src={qrSrc} alt="Código QR del ticket" style={{ width: '90px', height: '90px', margin: '0 auto' }} />
+          <div style={{ fontSize: '8px', marginTop: '4px' }}>Escanea para validar ticket</div>
         </div>
       )}
 
