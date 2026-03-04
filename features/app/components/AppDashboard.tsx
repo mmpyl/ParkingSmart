@@ -57,7 +57,7 @@ const AppDashboard: React.FC<AppDashboardProps> = ({ appState }) => {
 
   const vehicleTypes = useMemo(() => ['all', ...Object.keys(typeCount)], [typeCount]);
 
-  const maxTypeCount = Math.max(1, ...Object.values(typeCount));
+  const maxTypeCount = Math.max(1, ...(Object.values(typeCount) as number[]));
 
   const timelineItems = useMemo(() => {
     const grouped = filteredRows.reduce<Record<string, { dateLabel: string; entries: number; exits: number; revenue: number; timestamp: number }>>((acc, row) => {
@@ -91,7 +91,7 @@ const AppDashboard: React.FC<AppDashboardProps> = ({ appState }) => {
       return acc;
     }, {});
 
-    return Object.entries(grouped)
+    return (Object.entries(grouped) as Array<[string, { dateLabel: string; entries: number; exits: number; revenue: number; timestamp: number }]>)
       .map(([id, value]) => ({ id, ...value }))
       .sort((a, b) => b.timestamp - a.timestamp);
   }, [filteredRows, timeGrouping]);
@@ -113,7 +113,7 @@ const AppDashboard: React.FC<AppDashboardProps> = ({ appState }) => {
       return acc;
     }, {});
 
-    const items = Object.entries(grouped).map(([placa, data]) => ({ placa, ...data }));
+    const items = (Object.entries(grouped) as Array<[string, { count: number; lastEntry: number; type: string; revenue: number }]>).map(([placa, data]) => ({ placa, ...data }));
 
     if (plateSortMode === 'frequency') {
       items.sort((a, b) => b.count - a.count || b.lastEntry - a.lastEntry);
@@ -181,7 +181,7 @@ const AppDashboard: React.FC<AppDashboardProps> = ({ appState }) => {
             <h3 className="pm-section-title mb-4">Distribución por tipo</h3>
             <div className="space-y-3">
               {Object.keys(typeCount).length === 0 && <p className="text-xs text-slate-400 font-semibold">Aún no hay datos para mostrar.</p>}
-              {Object.entries(typeCount).map(([type, count]) => (
+              {(Object.entries(typeCount) as Array<[string, number]>).map(([type, count]) => (
                 <div key={type}>
                   <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-1"><span>{type}</span><span>{count}</span></div>
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-indigo-500" style={{ width: `${(count / maxTypeCount) * 100}%` }} /></div>

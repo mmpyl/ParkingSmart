@@ -12,7 +12,7 @@ interface ActiveVehiclesGridProps {
   billingUnit?: BillingUnit;
 }
 
-const ActiveVehiclesGrid: React.FC<ActiveVehiclesGridProps> = ({ data, onRegisterExit, onPrintTicket, tariffs, currency = 'COP', billingUnit = 'hour' }) => {
+const ActiveVehiclesGrid: React.FC<ActiveVehiclesGridProps> = ({ data, onRegisterExit, onPrintTicket, tariffs, currency = 'COP', billingUnit = 'hour' as BillingUnit }) => {
   const activeVehicles = data.filter(v => v.Estado === 'Activo');
   const [tick, setTick] = useState(0);
 

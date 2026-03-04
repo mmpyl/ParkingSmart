@@ -10,7 +10,7 @@ interface TicketTemplateProps {
   billingUnit?: BillingUnit;
 }
 
-const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs, currency = 'COP', billingUnit = 'hour' }) => {
+const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs, currency = 'COP', billingUnit = 'hour' as BillingUnit }) => {
   const stats = calculateParkingStats(row.Entrada, row.Tipo, tariffs, row.Salida !== '-' ? new Date(row.Salida) : undefined, billingUnit);
   const isExit = row.Estado === 'Finalizado';
   const qrPayload = [
