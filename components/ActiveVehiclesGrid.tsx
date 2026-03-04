@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { SheetRow, Tariffs, calculateParkingStats, formatCurrency } from '../types';
+import { SheetRow, Tariffs, BillingUnit, calculateParkingStats, formatCurrency } from '../types';
 import { LogOut, Clock, Car, Bike, Truck, Timer, Printer } from 'lucide-react';
 
 interface ActiveVehiclesGridProps {
@@ -9,9 +9,10 @@ interface ActiveVehiclesGridProps {
   onPrintTicket: (row: SheetRow) => void;
   tariffs: Tariffs;
   currency?: string;
+  billingUnit?: BillingUnit;
 }
 
-const ActiveVehiclesGrid: React.FC<ActiveVehiclesGridProps> = ({ data, onRegisterExit, onPrintTicket, tariffs, currency = 'COP' }) => {
+const ActiveVehiclesGrid: React.FC<ActiveVehiclesGridProps> = ({ data, onRegisterExit, onPrintTicket, tariffs, currency = 'COP', billingUnit = 'hour' as BillingUnit }) => {
   const activeVehicles = data.filter(v => v.Estado === 'Activo');
   const [tick, setTick] = useState(0);
 
@@ -40,7 +41,7 @@ const ActiveVehiclesGrid: React.FC<ActiveVehiclesGridProps> = ({ data, onRegiste
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {activeVehicles.map((v) => {
-          const stats = calculateParkingStats(v.Entrada, v.Tipo, tariffs);
+          const stats = calculateParkingStats(v.Entrada, v.Tipo, tariffs, undefined, billingUnit);
           return (
             <div key={v.id} className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group relative overflow-hidden">
               <div className="flex justify-between items-start mb-3">
@@ -55,7 +56,7 @@ const ActiveVehiclesGrid: React.FC<ActiveVehiclesGridProps> = ({ data, onRegiste
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-black text-blue-600">{formatCurrency(stats.total, currency)}</div>
-                  <div className="text-[10px] text-slate-400 font-bold uppercase">Por {stats.chargedHours}h</div>
+                  <div className="text-[10px] text-slate-400 font-bold uppercase">Por {stats.chargedUnits} {stats.unitLabel}{stats.chargedUnits > 1 ? 's' : ''}</div>
                 </div>
               </div>
 
