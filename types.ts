@@ -38,6 +38,7 @@ export interface PrintSettings {
   nit: string;
   address: string;
   phone: string;
+  ticketTitle: string;
   footerMessage: string;
   autoPrintEntry: boolean;
   paperWidth: '58mm' | '80mm';
@@ -83,6 +84,7 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   nit: '900.000.000-1',
   address: 'Calle Principal #123',
   phone: '300 000 0000',
+  ticketTitle: 'COMPROBANTE DE PARQUEO',
   footerMessage: 'Gracias por su confianza. No nos hacemos responsables por objetos de valor no reportados.',
   autoPrintEntry: false,
   paperWidth: '80mm',

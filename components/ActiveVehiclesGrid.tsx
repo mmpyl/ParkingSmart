@@ -21,6 +21,10 @@ const ActiveVehiclesGrid: React.FC<ActiveVehiclesGridProps> = ({ data, onRegiste
     return () => clearInterval(timer);
   }, []);
 
+  useEffect(() => () => {
+    streamRef.current?.getTracks().forEach(track => track.stop());
+  }, []);
+
   const getIcon = (type: string) => {
     const lower = type.toLowerCase();
     if (lower.includes('moto') || lower.includes('bici')) return <Bike size={20} />;

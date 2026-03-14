@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Car, Bike, Truck, PlusCircle, X, History, AlertCircle, Settings2 } from 'lucide-react';
+import { Car, Bike, Truck, PlusCircle, X, History, AlertCircle, Settings2, Camera } from 'lucide-react';
 import { SheetRow, Tariffs } from '../types';
 
 interface QuickEntryActionsProps {
@@ -19,6 +18,12 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
   const [vehiculo, setVehiculo] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionRef = useRef<HTMLDivElement>(null);
+
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const getIconForType = (type: string) => {
     const lower = type.toLowerCase();
@@ -76,6 +81,10 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => () => {
+    streamRef.current?.getTracks().forEach(track => track.stop());
+  }, []);
+
   const handleSelectSuggestion = (p: string) => {
     const details = plateHistory.get(p);
     setPlaca(p);
@@ -97,13 +106,78 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
     }
   };
 
+  const openCamera = async () => {
+    setScanError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false
+      });
+      streamRef.current = stream;
+      setIsCameraOpen(true);
+      requestAnimationFrame(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      });
+    } catch {
+      setScanError('No se pudo abrir la cámara. Verifica permisos del navegador.');
+    }
+  };
+
+  const closeCamera = () => {
+    streamRef.current?.getTracks().forEach(track => track.stop());
+    streamRef.current = null;
+    setIsCameraOpen(false);
+    setIsScanning(false);
+  };
+
+  const scanPlateFromCamera = async () => {
+    if (!videoRef.current) return;
+    setIsScanning(true);
+    setScanError(null);
+
+    try {
+      const width = videoRef.current.videoWidth || 1280;
+      const height = videoRef.current.videoHeight || 720;
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('No se pudo procesar imagen');
+      ctx.drawImage(videoRef.current, 0, 0, width, height);
+
+      const Detector = (window as any).TextDetector;
+      if (!Detector) {
+        throw new Error('Tu navegador no soporta OCR nativo (TextDetector). Usa Chrome moderno en Android.');
+      }
+
+      const detector = new Detector();
+      const blocks = await detector.detect(canvas);
+      const detectedText = blocks.map((b: any) => b.rawValue || b.text || '').join(' ');
+      const recognizedPlate = extractPlateFromText(detectedText);
+
+      if (!recognizedPlate) {
+        throw new Error('No se detectó una placa válida. Acerca más la cámara y vuelve a intentar.');
+      }
+
+      setPlaca(recognizedPlate);
+      setShowSuggestions(true);
+      closeCamera();
+    } catch (error: any) {
+      setScanError(error?.message || 'No se pudo reconocer la placa.');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   const tariffKeys = Object.keys(tariffs);
 
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">Registros Rápidos</h3>
-        <button 
+        <button
           onClick={onOpenSettings}
           className="flex items-center gap-1.5 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
         >
@@ -111,7 +185,7 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
           Editar Tarifas
         </button>
       </div>
-      
+
       {!showForm ? (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {tariffKeys.map((type) => (
@@ -161,7 +235,23 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
                 className={`w-full px-4 py-2 bg-slate-50 border ${isPlacaActive ? 'border-red-300 ring-red-100' : 'border-slate-200 focus:ring-blue-500'} rounded-lg text-sm font-mono font-bold focus:ring-2 outline-none uppercase transition-all`}
                 required
               />
-              
+
+              <button
+                type="button"
+                onClick={openCamera}
+                className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg border border-slate-200 text-slate-600 bg-white hover:bg-slate-50"
+              >
+                <Camera size={12} />
+                Escanear placa con cámara
+              </button>
+
+              {scanError && (
+                <div className="mt-2 text-[10px] font-bold text-red-500 flex items-center gap-1">
+                  <AlertCircle size={10} />
+                  {scanError}
+                </div>
+              )}
+
               {isPlacaActive && (
                 <div className="absolute -bottom-6 left-0 flex items-center gap-1 text-[10px] font-bold text-red-500 uppercase animate-in slide-in-from-top-1">
                   <AlertCircle size={10} />
@@ -188,16 +278,12 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
                       >
                         <div className="flex flex-col">
                           <span className="font-mono font-bold text-slate-800">{p}</span>
-                          <span className="text-[9px] text-slate-400 font-medium">
-                            {d?.vehiculo}
-                          </span>
+                          <span className="text-[9px] text-slate-400 font-medium">{d?.vehiculo}</span>
                         </div>
                         {isActive ? (
                           <span className="text-[8px] font-black bg-green-100 text-green-700 px-1.5 py-0.5 rounded uppercase">Dentro</span>
                         ) : (
-                          <div className="text-[10px] text-slate-300 font-bold uppercase">
-                            {d?.tipo}
-                          </div>
+                          <div className="text-[10px] text-slate-300 font-bold uppercase">{d?.tipo}</div>
                         )}
                       </button>
                     );
@@ -205,7 +291,7 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
                 </div>
               )}
             </div>
-            
+
             <input
               type="text"
               placeholder="Vehículo (Opcional)"
@@ -213,7 +299,7 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
               onChange={(e) => setVehiculo(e.target.value)}
               className="flex-1 px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             />
-            
+
             <button
               type="submit"
               disabled={isPlacaActive || !placa.trim()}
@@ -223,6 +309,28 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
               Ingresar
             </button>
           </form>
+        </div>
+      )}
+
+      {isCameraOpen && (
+        <div className="fixed inset-0 z-[120] bg-slate-900/85 backdrop-blur-sm p-4 flex items-center justify-center">
+          <div className="w-full max-w-md bg-white rounded-2xl overflow-hidden shadow-2xl">
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h4 className="text-sm font-black uppercase tracking-widest text-slate-700">Escanear Placa</h4>
+              <button onClick={closeCamera} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+            </div>
+            <div className="p-4 space-y-3">
+              <video ref={videoRef} autoPlay playsInline muted className="w-full rounded-xl bg-black aspect-video object-cover" />
+              <p className="text-[11px] text-slate-500 font-semibold">Alinea la placa en el centro y presiona reconocer.</p>
+              <div className="flex gap-2">
+                <button type="button" onClick={closeCamera} className="flex-1 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-black uppercase">Cancelar</button>
+                <button type="button" onClick={scanPlateFromCamera} disabled={isScanning} className="flex-1 py-2 rounded-lg bg-blue-600 text-white text-xs font-black uppercase disabled:bg-slate-300">
+                  {isScanning ? 'Reconociendo...' : 'Reconocer placa'}
+                </button>
+              </div>
+              {scanError && <p className="text-[11px] text-red-500 font-bold">{scanError}</p>}
+            </div>
+          </div>
         </div>
       )}
     </div>
