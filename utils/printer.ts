@@ -42,15 +42,17 @@ export const generateEscPosTicket = (
   );
   const line = divider(settings.paperWidth);
   const rate = tariffs[row.Tipo] || tariffs.Default || 0;
-  const title = settings.ticketTitle?.trim() || 'PARKING RECEIPT';
+  const title = settings.ticketTitle?.trim() || 'COMPROBANTE DE PARQUEO';
 
   let commands = '';
   commands += CMDS.INIT;
   commands += CMDS.ALIGN_CENTER;
-  commands += CMDS.BOLD_ON;
-  commands += sanitize(settings.businessName) + LF;
-  commands += CMDS.BOLD_OFF;
-  commands += sanitize(settings.address) + LF;
+  if (settings.showBusinessInfo) {
+    commands += CMDS.BOLD_ON;
+    commands += sanitize(settings.businessName) + LF;
+    commands += CMDS.BOLD_OFF;
+    commands += sanitize(settings.address) + LF;
+  }
   commands += line + LF;
   commands += CMDS.BOLD_ON + sanitize(title) + CMDS.BOLD_OFF + LF;
   commands += line + LF;
@@ -61,26 +63,25 @@ export const generateEscPosTicket = (
     commands += `TIPO : ${sanitize(row.Tipo)}` + LF;
     commands += `VEHI : ${sanitize(String(row.Vehiculo || '-')).slice(0, 28)}` + LF;
   }
-  commands += `FROM : ${sanitize(stats.entryFormatted || '-')}` + LF;
+  commands += `ENTRA: ${sanitize(stats.entryFormatted || '-')}` + LF;
 
   if (isExit) {
-    commands += `TO   : ${sanitize(stats.exitFormatted || '-')}` + LF;
-    commands += `TIME : ${sanitize(stats.durationText)}` + LF;
+    commands += `SALE : ${sanitize(stats.exitFormatted || '-')}` + LF;
+    commands += `TIEMP: ${sanitize(stats.durationText)}` + LF;
     if (settings.showRateBreakdown) {
-      commands += `RATE : ${formatCurrency(rate, currency)} / ${billingUnit === 'day' ? 'dia' : 'hora'}` + LF;
+      commands += `TARIF: ${formatCurrency(rate, currency)} / ${billingUnit === 'day' ? 'dia' : 'hora'}` + LF;
     }
     commands += line + LF;
     commands += CMDS.ALIGN_CENTER;
     if (settings.textSize !== 'compact') commands += CMDS.TEXT_BIG;
-    commands += `Paid: ${formatCurrency(row.Total, currency)}` + LF;
+    commands += `TOTAL: ${formatCurrency(row.Total, currency)}` + LF;
     commands += CMDS.TEXT_NORMAL;
   } else {
     commands += line + LF;
     commands += CMDS.ALIGN_CENTER;
     if (settings.textSize !== 'compact') commands += CMDS.TEXT_DOUBLE_HEIGHT;
-    commands += `${new Date(row.Entrada).toLocaleTimeString('es-CO')}` + LF;
+    commands += `${sanitize(String(row.Placa).toUpperCase())}` + LF;
     commands += CMDS.TEXT_NORMAL;
-    commands += `Space: ${row.id}` + LF;
   }
 
   commands += line + LF;
@@ -91,9 +92,9 @@ export const generateEscPosTicket = (
     commands += line + LF;
   }
   commands += CMDS.ALIGN_CENTER;
-  commands += 'THANK YOU AND DRIVE SAFELY!' + LF;
+  if (settings.showThankYouMessage) commands += 'GRACIAS POR SU VISITA' + LF;
   commands += sanitize(settings.footerMessage).slice(0, 120) + LF;
-  commands += `NIT: ${sanitize(settings.nit)}  TEL: ${sanitize(settings.phone)}` + LF;
+  if (settings.showContactInfo) commands += `NIT: ${sanitize(settings.nit)}  TEL: ${sanitize(settings.phone)}` + LF;
   commands += LF + LF + LF;
   commands += CMDS.CUT;
 

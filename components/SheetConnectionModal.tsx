@@ -348,7 +348,7 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
                     type="text"
                     value={localPrint.ticketTitle}
                     onChange={(e) => setLocalPrint(p => ({ ...p, ticketTitle: e.target.value }))}
-                    placeholder="PARKING RECEIPT"
+                    placeholder="COMPROBANTE DE PARQUEO"
                     className="w-full px-4 py-2 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
                   />
                 </div>
@@ -429,6 +429,27 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
                   </button>
                 </div>
 
+
+                <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                  <span className="text-xs font-bold text-slate-700">Mostrar Encabezado del Negocio</span>
+                  <button onClick={() => setLocalPrint(p => ({ ...p, showBusinessInfo: !p.showBusinessInfo }))} className={`w-10 h-5 rounded-full relative transition-colors ${localPrint.showBusinessInfo ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${localPrint.showBusinessInfo ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                  <span className="text-xs font-bold text-slate-700">Mostrar Contacto (NIT/Teléfono)</span>
+                  <button onClick={() => setLocalPrint(p => ({ ...p, showContactInfo: !p.showContactInfo }))} className={`w-10 h-5 rounded-full relative transition-colors ${localPrint.showContactInfo ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${localPrint.showContactInfo ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                  <span className="text-xs font-bold text-slate-700">Mostrar Mensaje de Agradecimiento</span>
+                  <button onClick={() => setLocalPrint(p => ({ ...p, showThankYouMessage: !p.showThankYouMessage }))} className={`w-10 h-5 rounded-full relative transition-colors ${localPrint.showThankYouMessage ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${localPrint.showThankYouMessage ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
                 <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
                   <span className="text-xs font-bold text-slate-700">Impresión Automática al Ingreso</span>
                   <button onClick={() => setLocalPrint(p => ({ ...p, autoPrintEntry: !p.autoPrintEntry }))} className={`w-10 h-5 rounded-full relative transition-colors ${localPrint.autoPrintEntry ? 'bg-blue-600' : 'bg-slate-200'}`}>

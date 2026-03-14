@@ -20,7 +20,7 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
   const isExit = row.Estado === 'Finalizado';
   const rate = tariffs[row.Tipo] || tariffs.Default || 0;
   const dateLabel = new Date(row.Entrada).toLocaleDateString('es-CO');
-  const title = settings.ticketTitle?.trim() || 'PARKING RECEIPT';
+  const title = settings.ticketTitle?.trim() || 'COMPROBANTE DE PARQUEO';
   const textSize = settings.textSize || 'normal';
   const mult = SIZE_MULTIPLIER[textSize];
   const is58 = settings.paperWidth === '58mm';
@@ -65,15 +65,17 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
         overflowWrap: 'anywhere'
       }}
     >
-      <header style={{ textAlign: 'center' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: `${Math.max(12, Math.round(14 * mult))}px`, marginBottom: 2 }}>
-          <span>⬆</span>
-          <span style={{ fontSize: `${Math.max(15, Math.round(16 * mult))}px` }}>🚗</span>
-          <span>⬆</span>
-        </div>
-        <div style={{ fontWeight: 700, fontSize: `${Math.max(10, Math.round((is58 ? 11 : 12) * mult * 10) / 10)}px` }}>{settings.businessName}</div>
-        <div>{settings.address}</div>
-      </header>
+      {settings.showBusinessInfo && (
+        <header style={{ textAlign: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: `${Math.max(12, Math.round(14 * mult))}px`, marginBottom: 2 }}>
+            <span>⬆</span>
+            <span style={{ fontSize: `${Math.max(15, Math.round(16 * mult))}px` }}>🚗</span>
+            <span>⬆</span>
+          </div>
+          <div style={{ fontWeight: 700, fontSize: `${Math.max(10, Math.round((is58 ? 11 : 12) * mult * 10) / 10)}px` }}>{settings.businessName}</div>
+          <div>{settings.address}</div>
+        </header>
+      )}
 
       <section style={separatorStyle}>
         <div style={{ textAlign: 'center', letterSpacing: '0.08em', fontWeight: 700 }}>{title}</div>
@@ -82,33 +84,33 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
       {settings.showVehicleDetails && (
         <section style={{ ...separatorStyle, marginTop: 0 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 6, rowGap: 2 }}>
-            <strong>PLATE:</strong><span>{row.Placa}</span>
-            <strong>VEH:</strong><span>{String(row.Vehiculo || '-').slice(0, is58 ? 22 : 28)}</span>
-            <strong>TYPE:</strong><span>{row.Tipo}</span>
+            <strong>PLACA:</strong><span>{String(row.Placa).toUpperCase()}</span>
+            <strong>VEHÍCULO:</strong><span>{String(row.Vehiculo || '-').slice(0, is58 ? 22 : 28)}</span>
+            <strong>TIPO:</strong><span>{row.Tipo}</span>
           </div>
         </section>
       )}
 
       {!isExit ? (
         <section style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: `${heroFont}px`, lineHeight: 1, marginTop: 4 }}>{new Date(row.Entrada).toLocaleTimeString('es-CO')}</div>
-          <div style={{ marginTop: 4 }}>{dateLabel}</div>
-          <div style={{ marginTop: 2 }}>Space: {row.id}</div>
+          <div style={{ fontSize: `${heroFont}px`, lineHeight: 1, marginTop: 4, fontWeight: 700 }}>{String(row.Placa).toUpperCase()}</div>
+          <div style={{ marginTop: 4 }}>Fecha: {dateLabel}</div>
           <div style={separatorStyle}>
-            <div style={{ fontSize: `${paidFont}px`, fontWeight: 700 }}>Paid: {formatCurrency(0, currency)}</div>
+            <div style={{ fontSize: `${paidFont}px`, fontWeight: 700 }}>Total: {formatCurrency(0, currency)}</div>
           </div>
         </section>
       ) : (
         <section>
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 6, rowGap: 2 }}>
-            <strong>DATE:</strong><span>{dateLabel}</span>
-            <strong>FROM:</strong><span>{stats.entryFormatted || '-'}</span>
-            <strong>TO:</strong><span>{stats.exitFormatted || '-'}</span>
-            <strong>TYPE:</strong><span>{row.Tipo}</span>
-            {settings.showRateBreakdown && (<><strong>RATE:</strong><span>{formatCurrency(rate, currency)} / {billingUnit === 'day' ? 'día' : 'hora'}</span></>)}
+            <strong>FECHA:</strong><span>{dateLabel}</span>
+            <strong>ENTRADA:</strong><span>{stats.entryFormatted || '-'}</span>
+            <strong>SALIDA:</strong><span>{stats.exitFormatted || '-'}</span>
+            <strong>TIEMPO:</strong><span>{stats.durationText}</span>
+            <strong>TIPO:</strong><span>{row.Tipo}</span>
+            {settings.showRateBreakdown && (<><strong>TARIFA:</strong><span>{formatCurrency(rate, currency)} / {billingUnit === 'day' ? 'día' : 'hora'}</span></>)}
           </div>
           <div style={{ ...separatorStyle, textAlign: 'center' }}>
-            <div style={{ fontSize: `${paidFont}px`, fontWeight: 700 }}>Paid: {formatCurrency(row.Total, currency)}</div>
+            <div style={{ fontSize: `${paidFont}px`, fontWeight: 700 }}>Total: {formatCurrency(row.Total, currency)}</div>
           </div>
         </section>
       )}
@@ -124,7 +126,7 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
               backgroundSize: '100% 100%'
             }}
           />
-          <div style={{ fontSize: `${Math.max(8, Math.round(baseFont - 1))}px` }}>{row.Placa}</div>
+          <div style={{ fontSize: `${Math.max(8, Math.round(baseFont - 1))}px` }}>{String(row.Placa).toUpperCase()}</div>
         </section>
       )}
 
@@ -135,9 +137,13 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
       )}
 
       <footer style={{ textAlign: 'center' }}>
-        <div style={{ fontWeight: 700 }}>THANK YOU AND DRIVE SAFELY!</div>
+        {settings.showThankYouMessage && <div style={{ fontWeight: 700 }}>¡GRACIAS POR SU VISITA!</div>}
         <div style={{ marginTop: 4, fontSize: `${Math.max(8, Math.round(baseFont - 1))}px` }}>{settings.footerMessage}</div>
-        <div style={{ marginTop: 2, fontSize: `${Math.max(8, Math.round(baseFont - 1))}px` }}>NIT: {settings.nit} · Tel: {settings.phone}</div>
+        {settings.showContactInfo && (
+          <div style={{ marginTop: 2, fontSize: `${Math.max(8, Math.round(baseFont - 1))}px` }}>
+            NIT: {settings.nit} · Tel: {settings.phone}
+          </div>
+        )}
       </footer>
     </article>
   );
