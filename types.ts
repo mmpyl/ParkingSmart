@@ -43,6 +43,13 @@ export interface PrintSettings {
   autoPrintEntry: boolean;
   paperWidth: '58mm' | '80mm';
   showQrOnTicket: boolean;
+  showBarcodeOnTicket: boolean;
+  showVehicleDetails: boolean;
+  showRateBreakdown: boolean;
+  showBusinessInfo: boolean;
+  showContactInfo: boolean;
+  showThankYouMessage: boolean;
+  textSize: 'compact' | 'normal' | 'large';
   hardware?: PrinterHardware;
 }
 
@@ -89,6 +96,13 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   autoPrintEntry: false,
   paperWidth: '80mm',
   showQrOnTicket: true,
+  showBarcodeOnTicket: true,
+  showVehicleDetails: true,
+  showRateBreakdown: true,
+  showBusinessInfo: true,
+  showContactInfo: true,
+  showThankYouMessage: true,
+  textSize: 'normal',
   hardware: {
     type: 'system',
     name: 'Impresora del Sistema',

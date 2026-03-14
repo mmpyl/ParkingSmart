@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
-import { AppState } from '../../../types';
+import { AppState, DEFAULT_PRINT_SETTINGS, PrintSettings } from '../../../types';
 import { fetchSheetData, saveSheetData, SheetPayload } from '../services/sheetService';
 import { setStorageItem, storageKeys } from '../../shared/services/localStorageService';
 
@@ -12,6 +12,21 @@ const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   return 'Error desconocido de sincronización.';
 };
+
+
+const sanitizePrintSettingsForCloud = (settings: PrintSettings): PrintSettings => ({
+  ...DEFAULT_PRINT_SETTINGS,
+  ...settings,
+  hardware: settings.hardware
+    ? {
+        ...settings.hardware,
+        device: undefined,
+        interface: undefined,
+        writer: undefined,
+        connected: settings.hardware.type === 'system' ? true : !!settings.hardware.connected
+      }
+    : DEFAULT_PRINT_SETTINGS.hardware
+});
 
 export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
   const [isSyncing, setIsSyncing] = useState(false);
@@ -54,7 +69,7 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
         data: stateToSync.data,
         settings: {
           tariffs: stateToSync.tariffs,
-          printSettings: stateToSync.printSettings,
+          printSettings: sanitizePrintSettingsForCloud(stateToSync.printSettings),
           currency: stateToSync.currency,
           billingUnit: stateToSync.billingUnit
         }
@@ -119,7 +134,9 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
           lastSynced: now,
           tariffs: result.settings?.tariffs || prev.tariffs,
           printSettings: {
-            ...(result.settings?.printSettings || prev.printSettings),
+            ...DEFAULT_PRINT_SETTINGS,
+            ...prev.printSettings,
+            ...(result.settings?.printSettings || {}),
             hardware: prev.printSettings.hardware
           },
           currency: result.settings?.currency || prev.currency,

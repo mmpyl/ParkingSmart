@@ -42,7 +42,9 @@ const AppShell: React.FC = () => {
     setStorageItem(storageKeys.billingUnit, appState.billingUnit);
     const serializablePrintSettings = {
       ...appState.printSettings,
-      hardware: { ...appState.printSettings.hardware, device: undefined, interface: undefined }
+      hardware: appState.printSettings.hardware
+        ? { ...appState.printSettings.hardware, device: undefined, interface: undefined, writer: undefined }
+        : undefined
     };
     setStorageJson(storageKeys.printSettings, serializablePrintSettings);
   }, [appState]);

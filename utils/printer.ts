@@ -25,6 +25,20 @@ const sanitize = (str: string): string => str.normalize('NFD').replace(/[\u0300-
 const divider = (paperWidth: PrintSettings['paperWidth']) =>
   paperWidth === '58mm' ? '--------------------------------' : '------------------------------------------------';
 
+
+const buildAsciiBarcode = (plate: string) => {
+  const seed = sanitize(String(plate || '').toUpperCase()).replace(/[^A-Z0-9]/g, '') || '000000';
+  return Array.from(seed)
+    .map((char, idx) => {
+      const code = char.charCodeAt(0);
+      const unitA = '|'.repeat((code % 3) + 1);
+      const unitB = ':'.repeat(((code >> 2) % 2) + 1);
+      const unitC = '|'.repeat(((code >> 4) % 3) + 1);
+      return `${unitA}${unitB}${unitC}${idx % 2 === 0 ? '' : ':'}`;
+    })
+    .join('');
+};
+
 export const generateEscPosTicket = (
   row: SheetRow,
   settings: PrintSettings,
@@ -42,46 +56,58 @@ export const generateEscPosTicket = (
   );
   const line = divider(settings.paperWidth);
   const rate = tariffs[row.Tipo] || tariffs.Default || 0;
+  const title = settings.ticketTitle?.trim() || 'COMPROBANTE DE PARQUEO';
 
   let commands = '';
   commands += CMDS.INIT;
   commands += CMDS.ALIGN_CENTER;
-  commands += CMDS.BOLD_ON;
-  commands += sanitize(settings.businessName) + LF;
-  commands += CMDS.BOLD_OFF;
-  commands += sanitize(settings.address) + LF;
+  if (settings.showBusinessInfo) {
+    commands += CMDS.BOLD_ON;
+    commands += sanitize(settings.businessName) + LF;
+    commands += CMDS.BOLD_OFF;
+    commands += sanitize(settings.address) + LF;
+  }
   commands += line + LF;
-  commands += CMDS.BOLD_ON + 'PARKING RECEIPT' + CMDS.BOLD_OFF + LF;
+  commands += CMDS.BOLD_ON + sanitize(title) + CMDS.BOLD_OFF + LF;
   commands += line + LF;
 
   commands += CMDS.ALIGN_LEFT;
-  commands += `PLACA: ${sanitize(row.Placa)}` + LF;
-  commands += `TIPO : ${sanitize(row.Tipo)}` + LF;
-  commands += `FROM : ${sanitize(stats.entryFormatted || '-')}` + LF;
+  if (settings.showVehicleDetails) {
+    commands += `PLACA: ${sanitize(row.Placa)}` + LF;
+    commands += `VEHI : ${sanitize(String(row.Vehiculo || '-')).slice(0, 28)}` + LF;
+  }
+  commands += `ENTRA: ${sanitize(stats.entryFormatted || '-')}` + LF;
 
   if (isExit) {
-    commands += `TO   : ${sanitize(stats.exitFormatted || '-')}` + LF;
-    commands += `TIME : ${sanitize(stats.durationText)}` + LF;
-    commands += `RATE : ${formatCurrency(rate, currency)} / ${billingUnit === 'day' ? 'dia' : 'hora'}` + LF;
+    commands += `SALE : ${sanitize(stats.exitFormatted || '-')}` + LF;
+    commands += `TIEMP: ${sanitize(stats.durationText)}` + LF;
+    if (settings.showRateBreakdown) {
+      commands += `TARIF: ${formatCurrency(rate, currency)} / ${billingUnit === 'day' ? 'dia' : 'hora'}` + LF;
+    }
     commands += line + LF;
     commands += CMDS.ALIGN_CENTER;
-    commands += CMDS.TEXT_BIG;
-    commands += `Paid: ${formatCurrency(row.Total, currency)}` + LF;
+    if (settings.textSize !== 'compact') commands += CMDS.TEXT_BIG;
+    commands += `TOTAL: ${formatCurrency(row.Total, currency)}` + LF;
     commands += CMDS.TEXT_NORMAL;
   } else {
     commands += line + LF;
     commands += CMDS.ALIGN_CENTER;
-    commands += CMDS.TEXT_DOUBLE_HEIGHT;
-    commands += `${new Date(row.Entrada).toLocaleTimeString('es-CO')}` + LF;
+    if (settings.textSize !== 'compact') commands += CMDS.TEXT_DOUBLE_HEIGHT;
+    commands += `${sanitize(String(row.Placa).toUpperCase())}` + LF;
     commands += CMDS.TEXT_NORMAL;
-    commands += `Space: ${row.id}` + LF;
   }
 
   commands += line + LF;
+  if (settings.showBarcodeOnTicket) {
+    commands += CMDS.ALIGN_CENTER;
+    commands += buildAsciiBarcode(row.Placa) + LF;
+    commands += sanitize(row.Placa) + LF;
+    commands += line + LF;
+  }
   commands += CMDS.ALIGN_CENTER;
-  commands += 'THANK YOU AND DRIVE SAFELY!' + LF;
+  if (settings.showThankYouMessage) commands += 'GRACIAS POR SU VISITA' + LF;
   commands += sanitize(settings.footerMessage).slice(0, 120) + LF;
-  commands += `NIT: ${sanitize(settings.nit)}  TEL: ${sanitize(settings.phone)}` + LF;
+  if (settings.showContactInfo) commands += `NIT: ${sanitize(settings.nit)}  TEL: ${sanitize(settings.phone)}` + LF;
   commands += LF + LF + LF;
   commands += CMDS.CUT;
 
