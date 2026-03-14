@@ -2,13 +2,14 @@
 import React from 'react';
 import { X, Printer, CheckCircle2, ArrowDownCircle, ArrowUpCircle } from 'lucide-react';
 import TicketTemplate from './TicketTemplate';
-import { SheetRow, PrintSettings, Tariffs } from '../types';
+import { SheetRow, PrintSettings, Tariffs, BillingUnit } from '../types';
 
 interface PrintPreviewModalProps {
   row: SheetRow;
   settings: PrintSettings;
   tariffs: Tariffs;
   currency: string;
+  billingUnit?: BillingUnit;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -18,6 +19,7 @@ const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
   settings,
   tariffs,
   currency,
+  billingUnit = 'hour',
   onConfirm,
   onCancel
 }) => {
@@ -62,6 +64,7 @@ const PrintPreviewModal: React.FC<PrintPreviewModalProps> = ({
                  settings={settings} 
                  tariffs={tariffs} 
                  currency={currency} 
+                 billingUnit={billingUnit}
                />
                
                {/* Efecto decorativo de corte de papel */}
