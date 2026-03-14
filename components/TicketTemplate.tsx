@@ -92,8 +92,7 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
       {settings.showVehicleDetails && (
         <section style={{ ...separatorStyle, marginTop: 0 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 6, rowGap: 2 }}>
-            <strong>PLACA:</strong><span>{String(row.Placa).toUpperCase()}</span>
-            <strong>VEHÍCULO:</strong><span>{String(row.Vehiculo || '-').slice(0, is58 ? 22 : 28)}</span>
+            <strong>Placa:</strong><span>{String(row.Placa).toUpperCase()}</span>
           </div>
         </section>
       )}
@@ -103,20 +102,20 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
           <div style={{ fontSize: `${heroFont}px`, lineHeight: 1, marginTop: 4, fontWeight: 700 }}>{String(row.Placa).toUpperCase()}</div>
           <div style={{ marginTop: 4 }}>Fecha: {dateLabel}</div>
           <div style={separatorStyle}>
-            <div style={{ fontSize: `${paidFont}px`, fontWeight: 700 }}>Total: {formatCurrency(0, currency)}</div>
+            <div style={{ fontSize: `${paidFont}px`, fontWeight: 400 }}>Total: {formatCurrency(0, currency)}</div>
           </div>
         </section>
       ) : (
         <section>
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 6, rowGap: 2 }}>
-            <strong>FECHA:</strong><span>{dateLabel}</span>
-            <strong>ENTRADA:</strong><span>{stats.entryFormatted || '-'}</span>
-            <strong>SALIDA:</strong><span>{stats.exitFormatted || '-'}</span>
-            <strong>TIEMPO:</strong><span>{stats.durationText}</span>
-            {settings.showRateBreakdown && (<><strong>TARIFA:</strong><span>{formatCurrency(rate, currency)} / {billingUnit === 'day' ? 'día' : 'hora'}</span></>)}
+            <strong>Fecha:</strong><span>{dateLabel}</span>
+            <strong>Entrada:</strong><span>{stats.entryFormatted || '-'}</span>
+            <strong>Salida:</strong><span>{stats.exitFormatted || '-'}</span>
+            <strong>Tiempo:</strong><span>{stats.durationText}</span>
+            {settings.showRateBreakdown && (<><strong>Tarifa:</strong><span>{formatCurrency(rate, currency)} / {billingUnit === 'day' ? 'día' : 'hora'}</span></>)}
           </div>
           <div style={{ ...separatorStyle, textAlign: 'center' }}>
-            <div style={{ fontSize: `${paidFont}px`, fontWeight: 700 }}>Total: {formatCurrency(row.Total, currency)}</div>
+            <div style={{ fontSize: `${paidFont}px`, fontWeight: 400 }}>Total: {formatCurrency(row.Total, currency)}</div>
           </div>
         </section>
       )}
