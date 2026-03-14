@@ -24,16 +24,39 @@ export const usePrintManager = ({ appState, setAppState }: UsePrintManagerParams
     const settings = appState.printSettings;
     setShowPrintPreview(false);
 
-    const canTryHardware = settings.hardware && settings.hardware.type !== 'system' && (settings.hardware.connected || !!settings.hardware.device);
+    const hardwareType = settings.hardware?.type ?? 'system';
+    const isSystemMode = hardwareType === 'system';
+    let printWasSent = false;
 
-    if (canTryHardware) {
+    const runBrowserPrint = () => {
+      printWasSent = true;
+      setTimeout(() => window.print(), 150);
+    };
+
+    const canTryHardware = !!settings.hardware && !isSystemMode && (settings.hardware.connected || !!settings.hardware.device);
+
+    if (isSystemMode) {
+      runBrowserPrint();
+    } else if (canTryHardware) {
       const result = await printToHardware(rowToPrint, settings, appState.tariffs, appState.currency, appState.billingUnit);
-      if (!result.success) {
-        alert('Error hardware: ' + result.error);
-        window.print();
+      if (result.success) {
+        printWasSent = true;
+      } else {
+        const errorMsg = 'Error hardware: ' + result.error;
+        if (settings.browserPrintFallbackOnHardwareError) {
+          alert(errorMsg + ' Se utilizará impresión del navegador (PDF/impresora del sistema).');
+          runBrowserPrint();
+        } else {
+          alert(errorMsg + ' No se enviará a PDF automáticamente. Revise conexión o cambie a "Modo Impresora del Sistema".');
+        }
       }
     } else {
-      setTimeout(() => window.print(), 150);
+      alert('Modo térmico seleccionado, pero no hay impresora conectada. Conéctela en Ajustes > Ticket para imprimir por hardware.');
+      return;
+    }
+
+    if (!printWasSent) {
+      return;
     }
 
     const historyItem: PrintHistoryItem = {

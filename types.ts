@@ -49,6 +49,7 @@ export interface PrintSettings {
   showBusinessInfo: boolean;
   showContactInfo: boolean;
   showThankYouMessage: boolean;
+  browserPrintFallbackOnHardwareError: boolean;
   textSize: 'compact' | 'normal' | 'large';
   hardware?: PrinterHardware;
 }
@@ -102,6 +103,7 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   showBusinessInfo: true,
   showContactInfo: true,
   showThankYouMessage: true,
+  browserPrintFallbackOnHardwareError: false,
   textSize: 'normal',
   hardware: {
     type: 'system',

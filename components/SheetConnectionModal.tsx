@@ -486,6 +486,16 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
                     <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${localPrint.autoPrintEntry ? 'right-1' : 'left-1'}`} />
                   </button>
                 </div>
+
+                <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                  <div>
+                    <span className="text-xs font-bold text-slate-700">Fallback a navegador si falla hardware</span>
+                    <p className="text-[10px] text-slate-400 font-semibold">Desactivar para priorizar impresora térmica y evitar PDF</p>
+                  </div>
+                  <button onClick={() => setLocalPrint(p => ({ ...p, browserPrintFallbackOnHardwareError: !p.browserPrintFallbackOnHardwareError }))} className={`w-10 h-5 rounded-full relative transition-colors ${localPrint.browserPrintFallbackOnHardwareError ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${localPrint.browserPrintFallbackOnHardwareError ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
               </div>
             </div>
           )}
