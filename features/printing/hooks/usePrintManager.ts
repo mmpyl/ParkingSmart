@@ -25,7 +25,7 @@ export const usePrintManager = ({ appState, setAppState }: UsePrintManagerParams
     setShowPrintPreview(false);
 
     if (settings.hardware && settings.hardware.type !== 'system' && settings.hardware.connected) {
-      const result = await printToHardware(rowToPrint, settings, appState.tariffs, appState.currency);
+      const result = await printToHardware(rowToPrint, settings, appState.tariffs, appState.currency, appState.billingUnit);
       if (!result.success) {
         alert('Error hardware: ' + result.error);
         window.print();
@@ -49,7 +49,7 @@ export const usePrintManager = ({ appState, setAppState }: UsePrintManagerParams
       setStorageJson(storageKeys.printHistory, newHistory);
       return { ...prev, printHistory: newHistory };
     });
-  }, [appState.currency, appState.printSettings, appState.tariffs, rowToPrint, setAppState]);
+  }, [appState.billingUnit, appState.currency, appState.printSettings, appState.tariffs, rowToPrint, setAppState]);
 
   const handleReprint = useCallback((historyId: string) => {
     const item = appState.printHistory.find(h => h.id === historyId);

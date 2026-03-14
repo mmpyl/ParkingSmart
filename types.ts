@@ -38,10 +38,15 @@ export interface PrintSettings {
   nit: string;
   address: string;
   phone: string;
+  ticketTitle: string;
   footerMessage: string;
   autoPrintEntry: boolean;
   paperWidth: '58mm' | '80mm';
   showQrOnTicket: boolean;
+  showBarcodeOnTicket: boolean;
+  showVehicleDetails: boolean;
+  showRateBreakdown: boolean;
+  textSize: 'compact' | 'normal' | 'large';
   hardware?: PrinterHardware;
 }
 
@@ -83,10 +88,15 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   nit: '900.000.000-1',
   address: 'Calle Principal #123',
   phone: '300 000 0000',
+  ticketTitle: 'PARKING RECEIPT',
   footerMessage: 'Gracias por su confianza. No nos hacemos responsables por objetos de valor no reportados.',
   autoPrintEntry: false,
   paperWidth: '80mm',
   showQrOnTicket: true,
+  showBarcodeOnTicket: true,
+  showVehicleDetails: true,
+  showRateBreakdown: true,
+  textSize: 'normal',
   hardware: {
     type: 'system',
     name: 'Impresora del Sistema',
