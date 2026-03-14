@@ -38,7 +38,15 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
     isExit ? `Total:${row.Total}` : null
   ].filter(Boolean).join(' | ');
 
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrPayload)}`;
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&format=svg&ecc=M&qzone=1&data=${encodeURIComponent(qrPayload)}`;
+
+
+  const barcodeSeed = String(row.Placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '') || '000000';
+  const bars = Array.from(barcodeSeed).flatMap((char, idx) => {
+    const code = char.charCodeAt(0);
+    const widths = [(code % 3) + 1, ((code >> 2) % 3) + 1, ((code >> 4) % 3) + 1];
+    return widths.map((w, i) => ({ key: `${idx}-${i}`, width: w }));
+  });
 
   const separatorStyle: React.CSSProperties = {
     borderTop: '1px dashed #111827',
@@ -86,7 +94,6 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
           <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 6, rowGap: 2 }}>
             <strong>PLACA:</strong><span>{String(row.Placa).toUpperCase()}</span>
             <strong>VEHÍCULO:</strong><span>{String(row.Vehiculo || '-').slice(0, is58 ? 22 : 28)}</span>
-            <strong>TIPO:</strong><span>{row.Tipo}</span>
           </div>
         </section>
       )}
@@ -106,7 +113,6 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
             <strong>ENTRADA:</strong><span>{stats.entryFormatted || '-'}</span>
             <strong>SALIDA:</strong><span>{stats.exitFormatted || '-'}</span>
             <strong>TIEMPO:</strong><span>{stats.durationText}</span>
-            <strong>TIPO:</strong><span>{row.Tipo}</span>
             {settings.showRateBreakdown && (<><strong>TARIFA:</strong><span>{formatCurrency(rate, currency)} / {billingUnit === 'day' ? 'día' : 'hora'}</span></>)}
           </div>
           <div style={{ ...separatorStyle, textAlign: 'center' }}>
@@ -120,19 +126,33 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
           <div
             aria-label="barcode"
             style={{
-              height: is58 ? '34px' : '40px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'stretch',
+              gap: 1,
+              height: is58 ? '40px' : '46px',
               marginBottom: '4px',
-              backgroundImage: 'repeating-linear-gradient(90deg, #111827 0, #111827 2px, transparent 2px, transparent 4px, #111827 4px, #111827 5px, transparent 5px, transparent 7px)',
-              backgroundSize: '100% 100%'
+              overflow: 'hidden'
             }}
-          />
-          <div style={{ fontSize: `${Math.max(8, Math.round(baseFont - 1))}px` }}>{String(row.Placa).toUpperCase()}</div>
+          >
+            {bars.map((bar) => (
+              <span
+                key={bar.key}
+                style={{
+                  width: `${Math.max(1, bar.width)}px`,
+                  background: '#111827',
+                  display: 'inline-block'
+                }}
+              />
+            ))}
+          </div>
+          <div style={{ fontSize: `${Math.max(8, Math.round(baseFont - 1))}px`, letterSpacing: '0.12em' }}>{String(row.Placa).toUpperCase()}</div>
         </section>
       )}
 
       {settings.showQrOnTicket && (
         <section style={{ textAlign: 'center', marginBottom: 6 }}>
-          <img src={qrSrc} alt="Código QR del ticket" style={{ width: is58 ? '58px' : '68px', height: is58 ? '58px' : '68px', margin: '0 auto' }} />
+          <img src={qrSrc} alt="Código QR del ticket" style={{ width: is58 ? '70px' : '86px', height: is58 ? '70px' : '86px', margin: '0 auto', imageRendering: 'crisp-edges' }} />
         </section>
       )}
 

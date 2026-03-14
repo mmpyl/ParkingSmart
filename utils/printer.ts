@@ -25,6 +25,20 @@ const sanitize = (str: string): string => str.normalize('NFD').replace(/[\u0300-
 const divider = (paperWidth: PrintSettings['paperWidth']) =>
   paperWidth === '58mm' ? '--------------------------------' : '------------------------------------------------';
 
+
+const buildAsciiBarcode = (plate: string) => {
+  const seed = sanitize(String(plate || '').toUpperCase()).replace(/[^A-Z0-9]/g, '') || '000000';
+  return Array.from(seed)
+    .map((char, idx) => {
+      const code = char.charCodeAt(0);
+      const unitA = '|'.repeat((code % 3) + 1);
+      const unitB = ':'.repeat(((code >> 2) % 2) + 1);
+      const unitC = '|'.repeat(((code >> 4) % 3) + 1);
+      return `${unitA}${unitB}${unitC}${idx % 2 === 0 ? '' : ':'}`;
+    })
+    .join('');
+};
+
 export const generateEscPosTicket = (
   row: SheetRow,
   settings: PrintSettings,
@@ -60,7 +74,6 @@ export const generateEscPosTicket = (
   commands += CMDS.ALIGN_LEFT;
   if (settings.showVehicleDetails) {
     commands += `PLACA: ${sanitize(row.Placa)}` + LF;
-    commands += `TIPO : ${sanitize(row.Tipo)}` + LF;
     commands += `VEHI : ${sanitize(String(row.Vehiculo || '-')).slice(0, 28)}` + LF;
   }
   commands += `ENTRA: ${sanitize(stats.entryFormatted || '-')}` + LF;
@@ -87,7 +100,7 @@ export const generateEscPosTicket = (
   commands += line + LF;
   if (settings.showBarcodeOnTicket) {
     commands += CMDS.ALIGN_CENTER;
-    commands += '|||| ||| |||| ||| |||| ||| ||||' + LF;
+    commands += buildAsciiBarcode(row.Placa) + LF;
     commands += sanitize(row.Placa) + LF;
     commands += line + LF;
   }
