@@ -44,6 +44,10 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
   
   const [newTypeName, setNewTypeName] = useState('');
   const [newTypePrice, setNewTypePrice] = useState('');
+  const supportsBluetooth = typeof navigator !== 'undefined' && !!(navigator as any).bluetooth;
+  const supportsSerial = typeof navigator !== 'undefined' && !!(navigator as any).serial;
+  const isSecureContextEnabled = typeof window !== 'undefined' ? window.isSecureContext : false;
+
 
   const handleAddTariff = () => {
     if (newTypeName.trim() && newTypePrice) {
@@ -263,6 +267,32 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
                   >
                     <Usb size={24} className="text-slate-600" />
                     <span className="text-[10px] font-black uppercase tracking-tight text-center">Conectar USB</span>
+                  </button>
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-2 text-[10px] font-bold">
+                  <div className={`p-2 rounded-lg border ${supportsBluetooth ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                    Bluetooth: {supportsBluetooth ? 'Disponible' : 'No soportado'}
+                  </div>
+                  <div className={`p-2 rounded-lg border ${supportsSerial ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-slate-50 border-slate-200 text-slate-500'}`}>
+                    USB/Serial: {supportsSerial ? 'Disponible' : 'No soportado'}
+                  </div>
+                  <div className={`p-2 rounded-lg border ${isSecureContextEnabled ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-amber-50 border-amber-100 text-amber-700'}`}>
+                    Contexto seguro: {isSecureContextEnabled ? 'Sí (HTTPS)' : 'No'}
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between p-3 bg-white border rounded-lg">
+                  <div>
+                    <span className="text-xs font-bold text-slate-700">Modo Impresora del Sistema (Windows/Android)</span>
+                    <p className="text-[10px] text-slate-400 font-semibold">Usa el diálogo nativo del dispositivo (window.print)</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setLocalPrint(p => ({ ...p, hardware: { type: 'system', name: 'Impresora del Sistema', connected: true } }))}
+                    className="px-3 py-2 rounded-lg bg-slate-900 text-white text-[10px] font-black uppercase"
+                  >
+                    Usar modo sistema
                   </button>
                 </div>
 

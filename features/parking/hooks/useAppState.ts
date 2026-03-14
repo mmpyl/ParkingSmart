@@ -18,8 +18,12 @@ const getInitialAppState = (): AppState => {
     };
 
     if (parsedPrintSettings.hardware) {
-      parsedPrintSettings.hardware.connected = false;
-      parsedPrintSettings.hardware.device = undefined;
+      parsedPrintSettings.hardware.connected = parsedPrintSettings.hardware.type === 'system';
+      if (parsedPrintSettings.hardware.type !== 'system') {
+        parsedPrintSettings.hardware.device = undefined;
+        parsedPrintSettings.hardware.interface = undefined;
+        parsedPrintSettings.hardware.writer = undefined;
+      }
     }
 
     return {

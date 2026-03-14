@@ -24,7 +24,9 @@ export const usePrintManager = ({ appState, setAppState }: UsePrintManagerParams
     const settings = appState.printSettings;
     setShowPrintPreview(false);
 
-    if (settings.hardware && settings.hardware.type !== 'system' && settings.hardware.connected) {
+    const canTryHardware = settings.hardware && settings.hardware.type !== 'system' && (settings.hardware.connected || !!settings.hardware.device);
+
+    if (canTryHardware) {
       const result = await printToHardware(rowToPrint, settings, appState.tariffs, appState.currency, appState.billingUnit);
       if (!result.success) {
         alert('Error hardware: ' + result.error);
