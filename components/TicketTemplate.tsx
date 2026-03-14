@@ -9,26 +9,18 @@ interface TicketTemplateProps {
   billingUnit?: BillingUnit;
 }
 
-const SIZE_MULTIPLIER: Record<PrintSettings['textSize'], number> = {
-  compact: 0.88,
-  normal: 1,
-  large: 1.12
+const separatorStyle: React.CSSProperties = {
+  borderTop: '1px dashed #111827',
+  margin: '8px 0',
+  paddingTop: '8px'
 };
 
 const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs, currency = 'COP', billingUnit = 'hour' }) => {
   const stats = calculateParkingStats(row.Entrada, row.Tipo, tariffs, row.Salida !== '-' ? new Date(row.Salida) : undefined, billingUnit);
   const isExit = row.Estado === 'Finalizado';
+  const widthPx = settings.paperWidth === '58mm' ? 210 : 290;
   const rate = tariffs[row.Tipo] || tariffs.Default || 0;
   const dateLabel = new Date(row.Entrada).toLocaleDateString('es-CO');
-  const title = settings.ticketTitle?.trim() || 'COMPROBANTE DE PARQUEO';
-  const textSize = settings.textSize || 'normal';
-  const mult = SIZE_MULTIPLIER[textSize];
-  const is58 = settings.paperWidth === '58mm';
-
-  const baseFont = Math.max(9, Math.round((is58 ? 10.5 : 12) * mult * 10) / 10);
-  const heroFont = Math.max(24, Math.round((is58 ? 30 : 36) * mult));
-  const paidFont = Math.max(18, Math.round((is58 ? 22 : 26) * mult));
-  const ticketWidth = is58 ? '58mm' : '80mm';
 
   const qrPayload = [
     `Placa:${row.Placa}`,
@@ -36,134 +28,99 @@ const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs,
     `Entrada:${row.Entrada}`,
     isExit ? `Salida:${row.Salida}` : null,
     isExit ? `Total:${row.Total}` : null
-  ].filter(Boolean).join(' | ');
+  ]
+    .filter(Boolean)
+    .join(' | ');
 
-  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&format=svg&ecc=M&qzone=1&data=${encodeURIComponent(qrPayload)}`;
-
-
-  const barcodeSeed = String(row.Placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '') || '000000';
-  const bars = Array.from(barcodeSeed).flatMap((char, idx) => {
-    const code = char.charCodeAt(0);
-    const widths = [(code % 3) + 1, ((code >> 2) % 3) + 1, ((code >> 4) % 3) + 1];
-    return widths.map((w, i) => ({ key: `${idx}-${i}`, width: w }));
-  });
-
-  const separatorStyle: React.CSSProperties = {
-    borderTop: '1px dashed #111827',
-    margin: '6px 0',
-    paddingTop: '6px'
-  };
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(qrPayload)}`;
 
   return (
     <article
       data-ticket-width={settings.paperWidth}
       style={{
-        width: ticketWidth,
+        width: `${widthPx}px`,
         maxWidth: '100%',
-        boxSizing: 'border-box',
-        padding: is58 ? '8px 6px 10px' : '10px 8px 12px',
+        padding: '12px 10px 14px',
         color: '#111827',
         backgroundColor: 'white',
         fontFamily: '"JetBrains Mono", "Courier New", monospace',
-        fontSize: `${baseFont}px`,
-        lineHeight: 1.22,
-        letterSpacing: '0.01em',
-        border: '1px solid #e5e7eb',
-        wordBreak: 'break-word',
-        overflowWrap: 'anywhere'
+        fontSize: settings.paperWidth === '58mm' ? '11px' : '12px',
+        lineHeight: 1.3,
+        letterSpacing: '0.02em',
+        border: '1px solid #e5e7eb'
       }}
     >
-      {settings.showBusinessInfo && (
-        <header style={{ textAlign: 'center' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: `${Math.max(12, Math.round(14 * mult))}px`, marginBottom: 2 }}>
-            <span>⬆</span>
-            <span style={{ fontSize: `${Math.max(15, Math.round(16 * mult))}px` }}>🚗</span>
-            <span>⬆</span>
-          </div>
-          <div style={{ fontWeight: 700, fontSize: `${Math.max(10, Math.round((is58 ? 11 : 12) * mult * 10) / 10)}px` }}>{settings.businessName}</div>
-          <div>{settings.address}</div>
-        </header>
-      )}
+      <header style={{ textAlign: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '16px', marginBottom: 4 }}>
+          <span>⬆</span>
+          <span style={{ fontSize: '20px' }}>🚗</span>
+          <span>⬆</span>
+        </div>
+        <div style={{ fontWeight: 700, fontSize: '13px' }}>{settings.businessName}</div>
+        <div>{settings.address}</div>
+      </header>
 
       <section style={separatorStyle}>
-        <div style={{ textAlign: 'center', letterSpacing: '0.08em', fontWeight: 700 }}>{title}</div>
+        <div style={{ textAlign: 'center', letterSpacing: '0.1em', fontWeight: 700 }}>PARKING RECEIPT</div>
       </section>
-
-      {settings.showVehicleDetails && (
-        <section style={{ ...separatorStyle, marginTop: 0 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 6, rowGap: 2 }}>
-            <strong>PLACA:</strong><span>{String(row.Placa).toUpperCase()}</span>
-            <strong>VEHÍCULO:</strong><span>{String(row.Vehiculo || '-').slice(0, is58 ? 22 : 28)}</span>
-          </div>
-        </section>
-      )}
 
       {!isExit ? (
         <section style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: `${heroFont}px`, lineHeight: 1, marginTop: 4, fontWeight: 700 }}>{String(row.Placa).toUpperCase()}</div>
-          <div style={{ marginTop: 4 }}>Fecha: {dateLabel}</div>
+          <div style={{ fontSize: settings.paperWidth === '58mm' ? '36px' : '42px', lineHeight: 1, marginTop: 8 }}>{new Date(row.Entrada).toLocaleTimeString('es-CO')}</div>
+          <div style={{ marginTop: 6 }}>{dateLabel}</div>
+          <div style={{ marginTop: 4 }}>Space: {row.id}</div>
           <div style={separatorStyle}>
-            <div style={{ fontSize: `${paidFont}px`, fontWeight: 700 }}>Total: {formatCurrency(0, currency)}</div>
+            <div style={{ fontSize: settings.paperWidth === '58mm' ? '26px' : '30px', fontWeight: 700 }}>
+              Paid: {formatCurrency(0, currency)}
+            </div>
           </div>
         </section>
       ) : (
         <section>
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 6, rowGap: 2 }}>
-            <strong>FECHA:</strong><span>{dateLabel}</span>
-            <strong>ENTRADA:</strong><span>{stats.entryFormatted || '-'}</span>
-            <strong>SALIDA:</strong><span>{stats.exitFormatted || '-'}</span>
-            <strong>TIEMPO:</strong><span>{stats.durationText}</span>
-            {settings.showRateBreakdown && (<><strong>TARIFA:</strong><span>{formatCurrency(rate, currency)} / {billingUnit === 'day' ? 'día' : 'hora'}</span></>)}
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 8, rowGap: 4 }}>
+            <strong>DATE:</strong>
+            <span>{dateLabel}</span>
+            <strong>FROM:</strong>
+            <span>{stats.entryFormatted || '-'}</span>
+            <strong>TO:</strong>
+            <span>{stats.exitFormatted || '-'}</span>
+            <strong>TYPE:</strong>
+            <span>{row.Tipo}</span>
+            <strong>RATE:</strong>
+            <span>{formatCurrency(rate, currency)} / {billingUnit === 'day' ? 'día' : 'hora'}</span>
           </div>
           <div style={{ ...separatorStyle, textAlign: 'center' }}>
-            <div style={{ fontSize: `${paidFont}px`, fontWeight: 700 }}>Total: {formatCurrency(row.Total, currency)}</div>
+            <div style={{ fontSize: settings.paperWidth === '58mm' ? '26px' : '30px', fontWeight: 700 }}>
+              Paid: {formatCurrency(row.Total, currency)}
+            </div>
           </div>
         </section>
       )}
 
-      {settings.showBarcodeOnTicket && (
-        <section style={{ ...separatorStyle, textAlign: 'center' }}>
-          <div
-            aria-label="barcode"
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'stretch',
-              gap: 1,
-              height: is58 ? '40px' : '46px',
-              marginBottom: '4px',
-              overflow: 'hidden'
-            }}
-          >
-            {bars.map((bar) => (
-              <span
-                key={bar.key}
-                style={{
-                  width: `${Math.max(1, bar.width)}px`,
-                  background: '#111827',
-                  display: 'inline-block'
-                }}
-              />
-            ))}
-          </div>
-          <div style={{ fontSize: `${Math.max(8, Math.round(baseFont - 1))}px`, letterSpacing: '0.12em' }}>{String(row.Placa).toUpperCase()}</div>
-        </section>
-      )}
+      <section style={{ ...separatorStyle, textAlign: 'center' }}>
+        <div
+          aria-label="barcode"
+          style={{
+            height: '44px',
+            marginBottom: '6px',
+            backgroundImage:
+              'repeating-linear-gradient(90deg, #111827 0, #111827 2px, transparent 2px, transparent 4px, #111827 4px, #111827 5px, transparent 5px, transparent 7px)',
+            backgroundSize: '100% 100%'
+          }}
+        />
+        <div style={{ fontSize: '10px' }}>{row.Placa}</div>
+      </section>
 
       {settings.showQrOnTicket && (
-        <section style={{ textAlign: 'center', marginBottom: 6 }}>
-          <img src={qrSrc} alt="Código QR del ticket" style={{ width: is58 ? '70px' : '86px', height: is58 ? '70px' : '86px', margin: '0 auto', imageRendering: 'crisp-edges' }} />
+        <section style={{ textAlign: 'center', marginBottom: 8 }}>
+          <img src={qrSrc} alt="Código QR del ticket" style={{ width: '72px', height: '72px', margin: '0 auto' }} />
         </section>
       )}
 
       <footer style={{ textAlign: 'center' }}>
-        {settings.showThankYouMessage && <div style={{ fontWeight: 700 }}>¡GRACIAS POR SU VISITA!</div>}
-        <div style={{ marginTop: 4, fontSize: `${Math.max(8, Math.round(baseFont - 1))}px` }}>{settings.footerMessage}</div>
-        {settings.showContactInfo && (
-          <div style={{ marginTop: 2, fontSize: `${Math.max(8, Math.round(baseFont - 1))}px` }}>
-            NIT: {settings.nit} · Tel: {settings.phone}
-          </div>
-        )}
+        <div style={{ fontWeight: 700 }}>THANK YOU AND DRIVE SAFELY!</div>
+        <div style={{ marginTop: 6, fontSize: '10px' }}>{settings.footerMessage}</div>
+        <div style={{ marginTop: 4, fontSize: '10px' }}>NIT: {settings.nit} · Tel: {settings.phone}</div>
       </footer>
     </article>
   );

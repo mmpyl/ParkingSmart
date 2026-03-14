@@ -11,26 +11,6 @@ interface QuickEntryActionsProps {
 
 const normalizePlate = (value: string) => value.replace(/\s+/g, '').toUpperCase();
 
-const extractPlateFromText = (rawText: string) => {
-  const clean = rawText.toUpperCase().replace(/[^A-Z0-9]/g, ' ');
-  const chunks = clean.split(/\s+/).filter(Boolean);
-  const patterns = [/^[A-Z]{3}[0-9]{3}$/, /^[A-Z]{3}[0-9]{2}[A-Z]$/, /^[A-Z]{2}[0-9]{3}[A-Z]{2}$/];
-
-  for (const token of chunks) {
-    if (patterns.some((p) => p.test(token))) return token;
-  }
-
-  const joined = clean.replace(/\s+/g, '');
-  for (let i = 0; i < joined.length; i += 1) {
-    for (let len = 6; len <= 7; len += 1) {
-      const token = joined.slice(i, i + len);
-      if (patterns.some((p) => p.test(token))) return token;
-    }
-  }
-
-  return '';
-};
-
 const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, history, tariffs, onOpenSettings }) => {
   const [showForm, setShowForm] = useState(false);
   const [selectedType, setSelectedType] = useState('');
@@ -72,9 +52,9 @@ const QuickEntryActions: React.FC<QuickEntryActionsProps> = ({ onRegister, histo
     const map = new Map<string, { vehiculo: string; tipo: string }>();
     [...history].forEach(row => {
       if (row.Placa && row.Placa !== '-') {
-        map.set(normalizePlate(String(row.Placa)), {
-          vehiculo: String(row.Vehiculo),
-          tipo: String(row.Tipo)
+        map.set(normalizePlate(String(row.Placa)), { 
+          vehiculo: String(row.Vehiculo), 
+          tipo: String(row.Tipo) 
         });
       }
     });
