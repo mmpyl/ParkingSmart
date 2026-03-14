@@ -31,10 +31,18 @@
         background: #94a3b8;
       }
 
+      #ticket-print-container {
+        display: none;
+      }
+
       /* PRINT STYLES */
       @media print {
         @page {
           margin: 0;
+        }
+        * {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
         body * {
           visibility: hidden;
@@ -43,6 +51,8 @@
           visibility: visible;
         }
         #ticket-print-container {
+          display: flex;
+          justify-content: center;
           position: absolute;
           left: 0;
           top: 0;
@@ -50,6 +60,12 @@
           padding: 0;
           margin: 0;
           background: white;
+        }
+        #ticket-print-container [data-ticket-width='58mm'] {
+          width: 58mm !important;
+        }
+        #ticket-print-container [data-ticket-width='80mm'] {
+          width: 80mm !important;
         }
         .no-print {
           display: none !important;
@@ -59,7 +75,6 @@
   <script type="importmap">
 {
   "imports": {
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
     "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
     "react/": "https://esm.sh/react@^19.2.4/",
