@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { X, Link, Trash2, Wallet, Printer, Bluetooth, Usb, Cpu, AlertCircle, History, PrinterCheck, Edit2, Loader2, ExternalLink, Plus } from 'lucide-react';
-import { Tariffs, PrintSettings, CURRENCY_OPTIONS, PrinterHardware, DEFAULT_PRINT_SETTINGS, PrintHistoryItem } from '../types';
+import { Tariffs, PrintSettings, BillingUnit, CURRENCY_OPTIONS, PrinterHardware, DEFAULT_PRINT_SETTINGS, PrintHistoryItem } from '../types';
 
 interface SheetConnectionModalProps {
   onClose: () => void;
@@ -11,10 +11,11 @@ interface SheetConnectionModalProps {
   tariffs: Tariffs;
   currency: string;
   printSettings: PrintSettings;
+  billingUnit: BillingUnit;
   printHistory: PrintHistoryItem[];
   onUpdatePrintHistory: (newHistory: PrintHistoryItem[]) => void;
   onReprint: (historyId: string) => void;
-  onSaveAllSettings: (tariffs: Tariffs, printSettings: PrintSettings, currency: string) => void;
+  onSaveAllSettings: (tariffs: Tariffs, printSettings: PrintSettings, currency: string, billingUnit: BillingUnit) => void;
   initialTab?: 'cloud' | 'tariffs' | 'printer' | 'history';
 }
 
@@ -25,6 +26,7 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
   tariffs,
   currency,
   printSettings,
+  billingUnit,
   printHistory,
   onUpdatePrintHistory,
   onReprint,
@@ -34,8 +36,9 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
   const [activeTab, setActiveTab] = useState<'cloud' | 'tariffs' | 'printer' | 'history'>(initialTab);
   const [url, setUrl] = useState(currentUrl || '');
   const [localTariffs, setLocalTariffs] = useState<Tariffs>({ ...tariffs });
-  const [localPrint, setLocalPrint] = useState<PrintSettings>({ ...printSettings });
+  const [localPrint, setLocalPrint] = useState<PrintSettings>({ ...DEFAULT_PRINT_SETTINGS, ...printSettings });
   const [localCurrency, setLocalCurrency] = useState(currency);
+  const [localBillingUnit, setLocalBillingUnit] = useState<BillingUnit>(billingUnit);
   const [isSearchingHardware, setIsSearchingHardware] = useState<'bluetooth' | 'serial' | null>(null);
   const [hardwareError, setHardwareError] = useState<string | null>(null);
   
@@ -62,7 +65,7 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
   };
 
   const handleSaveAll = () => {
-    onSaveAllSettings(localTariffs, localPrint, localCurrency);
+    onSaveAllSettings(localTariffs, localPrint, localCurrency, localBillingUnit);
     onClose();
   };
 
@@ -200,6 +203,13 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
                   {CURRENCY_OPTIONS.map(opt => <option key={opt.code} value={opt.code}>{opt.code} - {opt.label}</option>)}
                 </select>
               </div>
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <label className="text-[10px] font-black uppercase text-slate-400 mb-2 block">Cobro por</label>
+                <select value={localBillingUnit} onChange={(e) => setLocalBillingUnit(e.target.value as BillingUnit)} className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm font-bold">
+                  <option value="hour">Hora o fracción</option>
+                  <option value="day">Día o fracción</option>
+                </select>
+              </div>
               <div className="space-y-2">
                 {(Object.entries(localTariffs) as [string, number][]).map(([type, price]) => (
                   <div key={type} className="flex items-center gap-3 bg-white p-3 border border-slate-100 rounded-xl shadow-sm">
@@ -212,7 +222,7 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
                 <div id="new-tariff-form" className="bg-blue-50/50 p-4 rounded-xl border border-dashed border-blue-200 mt-4">
                   <div className="flex gap-2">
                     <input type="text" placeholder="Tipo" value={newTypeName} onChange={(e) => setNewTypeName(e.target.value)} className="flex-1 px-3 py-2 border rounded-lg text-xs font-bold" />
-                    <input type="number" placeholder="$/H" value={newTypePrice} onChange={(e) => setNewTypePrice(e.target.value)} className="w-20 px-3 py-2 border rounded-lg text-xs font-bold" />
+                    <input type="number" placeholder={localBillingUnit === 'day' ? '$/D' : '$/H'} value={newTypePrice} onChange={(e) => setNewTypePrice(e.target.value)} className="w-20 px-3 py-2 border rounded-lg text-xs font-bold" />
                     <button onClick={handleAddTariff} className="bg-blue-600 text-white p-2 rounded-lg"><Plus size={20} /></button>
                   </div>
                 </div>
@@ -299,6 +309,146 @@ const SheetConnectionModal: React.FC<SheetConnectionModalProps> = ({
                 <div className="space-y-1">
                   <label className="text-[10px] font-black uppercase text-slate-400">Nombre del Negocio</label>
                   <input type="text" value={localPrint.businessName} onChange={(e) => setLocalPrint(p => ({ ...p, businessName: e.target.value }))} placeholder="Nombre Empresa" className="w-full px-4 py-2 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">NIT</label>
+                    <input
+                      type="text"
+                      value={localPrint.nit}
+                      onChange={(e) => setLocalPrint(p => ({ ...p, nit: e.target.value }))}
+                      placeholder="NIT"
+                      className="w-full px-4 py-2 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase text-slate-400">Teléfono</label>
+                    <input
+                      type="text"
+                      value={localPrint.phone}
+                      onChange={(e) => setLocalPrint(p => ({ ...p, phone: e.target.value }))}
+                      placeholder="Teléfono"
+                      className="w-full px-4 py-2 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400">Dirección</label>
+                  <input
+                    type="text"
+                    value={localPrint.address}
+                    onChange={(e) => setLocalPrint(p => ({ ...p, address: e.target.value }))}
+                    placeholder="Dirección"
+                    className="w-full px-4 py-2 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400">Título del Ticket</label>
+                  <input
+                    type="text"
+                    value={localPrint.ticketTitle}
+                    onChange={(e) => setLocalPrint(p => ({ ...p, ticketTitle: e.target.value }))}
+                    placeholder="COMPROBANTE DE PARQUEO"
+                    className="w-full px-4 py-2 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400">Mensaje Pie de Ticket</label>
+                  <textarea
+                    value={localPrint.footerMessage}
+                    onChange={(e) => setLocalPrint(p => ({ ...p, footerMessage: e.target.value }))}
+                    placeholder="Mensaje final"
+                    rows={3}
+                    className="w-full px-4 py-2 border rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400">Tamaño de Texto del Ticket</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { id: 'compact', label: 'Compacto' },
+                      { id: 'normal', label: 'Normal' },
+                      { id: 'large', label: 'Grande' }
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setLocalPrint(p => ({ ...p, textSize: opt.id as PrintSettings['textSize'] }))}
+                        className={`px-3 py-2 rounded-lg border text-[11px] font-black transition-colors ${localPrint.textSize === opt.id ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400'}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase text-slate-400">Ancho de Papel</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setLocalPrint(p => ({ ...p, paperWidth: '58mm' }))}
+                      className={`px-3 py-2 rounded-lg border text-xs font-black transition-colors ${localPrint.paperWidth === '58mm' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400'}`}
+                    >
+                      58mm
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setLocalPrint(p => ({ ...p, paperWidth: '80mm' }))}
+                      className={`px-3 py-2 rounded-lg border text-xs font-black transition-colors ${localPrint.paperWidth === '80mm' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400'}`}
+                    >
+                      80mm
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                  <span className="text-xs font-bold text-slate-700">Mostrar Código QR en Ticket</span>
+                  <button onClick={() => setLocalPrint(p => ({ ...p, showQrOnTicket: !p.showQrOnTicket }))} className={`w-10 h-5 rounded-full relative transition-colors ${localPrint.showQrOnTicket ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${localPrint.showQrOnTicket ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                  <span className="text-xs font-bold text-slate-700">Mostrar Código de Barras</span>
+                  <button onClick={() => setLocalPrint(p => ({ ...p, showBarcodeOnTicket: !p.showBarcodeOnTicket }))} className={`w-10 h-5 rounded-full relative transition-colors ${localPrint.showBarcodeOnTicket ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${localPrint.showBarcodeOnTicket ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                  <span className="text-xs font-bold text-slate-700">Mostrar Datos del Vehículo</span>
+                  <button onClick={() => setLocalPrint(p => ({ ...p, showVehicleDetails: !p.showVehicleDetails }))} className={`w-10 h-5 rounded-full relative transition-colors ${localPrint.showVehicleDetails ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${localPrint.showVehicleDetails ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                  <span className="text-xs font-bold text-slate-700">Mostrar Detalle de Tarifa</span>
+                  <button onClick={() => setLocalPrint(p => ({ ...p, showRateBreakdown: !p.showRateBreakdown }))} className={`w-10 h-5 rounded-full relative transition-colors ${localPrint.showRateBreakdown ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${localPrint.showRateBreakdown ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+
+
+                <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                  <span className="text-xs font-bold text-slate-700">Mostrar Encabezado del Negocio</span>
+                  <button onClick={() => setLocalPrint(p => ({ ...p, showBusinessInfo: !p.showBusinessInfo }))} className={`w-10 h-5 rounded-full relative transition-colors ${localPrint.showBusinessInfo ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${localPrint.showBusinessInfo ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                  <span className="text-xs font-bold text-slate-700">Mostrar Contacto (NIT/Teléfono)</span>
+                  <button onClick={() => setLocalPrint(p => ({ ...p, showContactInfo: !p.showContactInfo }))} className={`w-10 h-5 rounded-full relative transition-colors ${localPrint.showContactInfo ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${localPrint.showContactInfo ? 'right-1' : 'left-1'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                  <span className="text-xs font-bold text-slate-700">Mostrar Mensaje de Agradecimiento</span>
+                  <button onClick={() => setLocalPrint(p => ({ ...p, showThankYouMessage: !p.showThankYouMessage }))} className={`w-10 h-5 rounded-full relative transition-colors ${localPrint.showThankYouMessage ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                    <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${localPrint.showThankYouMessage ? 'right-1' : 'left-1'}`} />
+                  </button>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-white border rounded-lg">
                   <span className="text-xs font-bold text-slate-700">Impresión Automática al Ingreso</span>
