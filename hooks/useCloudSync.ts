@@ -48,7 +48,8 @@ export const useCloudSync = ({ sheetUrl, setAppState }: UseCloudSyncParams) => {
         settings: {
           tariffs: stateToSync.tariffs,
           printSettings: stateToSync.printSettings,
-          currency: stateToSync.currency
+          currency: stateToSync.currency,
+          billingUnit: stateToSync.billingUnit
         }
       };
 
