@@ -5,6 +5,7 @@ export const storageKeys = {
   printSettings: 'parkAi_printSettings',
   printHistory: 'parkAi_printHistory',
   currency: 'parkAi_currency',
+  billingUnit: 'parkAi_billingUnit',
   lastSynced: 'parkAi_lastSynced',
   sheetUrl: 'parkAi_url'
 } as const;

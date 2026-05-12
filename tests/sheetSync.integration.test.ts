@@ -39,7 +39,16 @@ describe('sheet sync integration (mock fetch)', () => {
         tariffs: { Sedán: 2000 },
         printSettings: {
           businessName: 'X', nit: '1', address: 'A', phone: 'P', footerMessage: 'F', autoPrintEntry: false, paperWidth: '80mm', showQrOnTicket: true,
-          hardware: { type: 'system', name: 'Impresora', connected: true }
+          hardware: { type: 'system', name: 'Impresora', connected: true },
+          ticketTitle: 'COMPROBANTE',
+          showBarcodeOnTicket: true,
+          showVehicleDetails: true,
+          showRateBreakdown: true,
+          showBusinessInfo: true,
+          showContactInfo: true,
+          showThankYouMessage: true,
+          browserPrintFallbackOnHardwareError: false,
+          textSize: 'normal'
         },
         currency: 'COP',
         billingUnit: 'hour'

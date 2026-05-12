@@ -16,7 +16,7 @@ const SIZE_MULTIPLIER: Record<PrintSettings['textSize'], number> = {
 };
 
 const TicketTemplate: React.FC<TicketTemplateProps> = ({ row, settings, tariffs, currency = 'COP', billingUnit = 'hour' }) => {
-  const stats = calculateParkingStats(row.Entrada, row.Tipo, tariffs, row.Salida !== '-' ? new Date(row.Salida) : undefined, billingUnit);
+  const stats = calculateParkingStats(row.Entrada, row.Tipo, tariffs, row.Salida !== '-' ? new Date(row.Salida) : undefined, billingUnit as BillingUnit);
   const isExit = row.Estado === 'Finalizado';
   const rate = tariffs[row.Tipo] || tariffs.Default || 0;
   const dateLabel = new Date(row.Entrada).toLocaleDateString('es-CO');
